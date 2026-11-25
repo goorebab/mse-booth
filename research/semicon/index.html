@@ -1,0 +1,776 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>C8-BTBT 라인 패터닝</title>
+<style>
+  :root{
+    --bg1:#fbfbfc; --bg2:#e4e8ee; --ink:#262a33; --ink2:#5d6370; --line:#d6dbe3;
+    --panel:rgba(255,255,255,.95); --accent:#d99a16; --pdms:#4b9fbf; --sio:#6c5fc9;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;font-family:"Malgun Gothic","Segoe UI",sans-serif;color:var(--ink);
+    background:radial-gradient(ellipse at 40% 40%,var(--bg1) 0%,var(--bg2) 100%)}
+  #gl{position:fixed;inset:0;width:100vw;height:100vh;display:block;cursor:grab;touch-action:none}
+  html{touch-action:manipulation;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+  #gl.hover{cursor:pointer} #gl.drag{cursor:grabbing}
+  header{position:fixed;left:26px;top:20px;pointer-events:none}
+  header h1{margin:0;font:700 26px "Segoe UI","Malgun Gothic",sans-serif;letter-spacing:-.3px}
+  header p{margin:4px 0 0;color:var(--ink2);font-size:14px}
+  #tools{position:fixed;right:18px;top:18px;display:flex;gap:8px;z-index:3}
+  button.tb{font:inherit;font-size:13.5px;padding:8px 14px;border-radius:10px;border:1px solid var(--line);
+    background:#fff;color:var(--ink);cursor:pointer;box-shadow:0 2px 8px rgba(30,40,60,.06)}
+  button.tb:hover{background:#f2f5f9}
+  #hint{position:fixed;left:18px;right:436px;bottom:74px;text-align:center;font-size:12.5px;color:var(--ink2);pointer-events:none}
+  #hint span{background:rgba(255,255,255,.78);padding:5px 14px;border-radius:20px;border:1px solid var(--line)}
+  /* 호버 콜아웃 */
+  #callout{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:2}
+  #callout polyline{fill:none;stroke:#3a3d44;stroke-width:1.8;stroke-linejoin:round}
+  #callout .ring{fill:#fff;stroke:#3a3d44;stroke-width:2}
+  #callout .pip{fill:#3a3d44}
+  #callout text{font:italic 700 19px "Segoe UI","Malgun Gothic",sans-serif;fill:#3a3d44;letter-spacing:.5px}
+  #callout text .en{font:italic 400 13px "Segoe UI",sans-serif;fill:#7a7f8a;letter-spacing:.3px}
+  /* 장면 라벨 */
+  .opl{position:fixed;pointer-events:none;transform:translate(-50%,-50%);font:700 13.5px "Segoe UI","Malgun Gothic",sans-serif;
+    padding:3px 9px;border-radius:14px;background:rgba(255,255,255,.9);border:1px solid var(--line);white-space:nowrap;opacity:0}
+  /* 타임라인 */
+  #timeline{position:fixed;left:18px;right:436px;bottom:16px;display:flex;gap:8px;z-index:3}
+  #play{width:48px;padding:0;font-size:16px}
+  #chips{flex:1;display:flex;gap:5px;touch-action:none}
+  .chip{position:relative;flex:1;min-width:0;height:46px;border-radius:10px;background:#fff;border:1px solid var(--line);
+    overflow:hidden;cursor:pointer;display:flex;align-items:center;gap:7px;padding:0 10px;user-select:none;box-shadow:0 2px 8px rgba(30,40,60,.05)}
+  .chip .fill{position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(217,154,22,.16)}
+  .chip .n{position:relative;flex:none;width:21px;height:21px;border-radius:50%;background:#e9ecf1;color:var(--ink2);
+    font:700 12px "Segoe UI",sans-serif;display:flex;align-items:center;justify-content:center}
+  .chip .t{position:relative;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chip.done .n{background:#f3dfae;color:#7a5508}
+  .chip.on{border-color:var(--accent);box-shadow:0 0 0 2px rgba(217,154,22,.25)}
+  .chip.on .n{background:var(--accent);color:#fff}
+  .chip.on .t{font-weight:700}
+  /* 정보 패널 */
+  #info{position:fixed;top:70px;right:18px;bottom:16px;width:400px;overflow:auto;padding:22px 24px 20px;z-index:3;
+    background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:0 10px 40px rgba(30,40,60,.14)}
+  #info .top{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink2)}
+  .tag{padding:3px 9px;border-radius:20px;font-weight:700;font-size:11.5px;color:#fff}
+  #info .x{margin-left:auto;border:0;background:#eef1f5;padding:6px 11px;border-radius:16px;cursor:pointer;font-size:12px;color:var(--ink2)}
+  #info h2{margin:12px 0 2px;font-size:25px;letter-spacing:-.4px}
+  #info .en{font-family:"Segoe UI",sans-serif;color:var(--ink2);font-size:14px}
+  #info .sum{margin:14px 0 12px;font-size:16px;line-height:1.6;font-weight:600}
+  .cap{padding:10px 13px;font-size:13.5px;color:#7a5508;background:#fdf5e1;border:1px solid #f1dc9c;border-radius:10px;line-height:1.55}
+  #info h4{margin:16px 0 6px;font-size:13px;color:var(--ink2);letter-spacing:.3px}
+  #info ul{margin:0;padding-left:18px;line-height:1.7;font-size:14.5px}
+  #info p.mat{margin:0;font-size:14.5px;line-height:1.6}
+  .sect{width:100%;height:auto;display:block;background:#f7f8fa;border:1px solid var(--line);border-radius:10px}
+  .molsvg{width:100%;height:auto;display:block;background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12.5px;color:var(--ink2);margin-top:8px}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .legend i{width:12px;height:12px;border-radius:50%;display:inline-block;border:1px solid rgba(0,0,0,.25)}
+  .note{margin-top:10px;font-size:12px;color:#8a8f99}
+  .nav{display:flex;gap:8px;margin-top:18px}
+  .nav button{flex:1}
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<header>
+  <h1>C8-BTBT 결정 라인 패터닝</h1>
+  <p>드롭캐스팅 → 건조 결정화 → PDMS 흡수로 라인 패턴 만들기 · 장면의 물체에 마우스를 올리거나 클릭해 보세요</p>
+</header>
+<div id="tools">
+  <button class="tb" id="btnRestart">처음부터</button>
+  <button class="tb" id="btnReset">시점 초기화</button>
+</div>
+<div id="hint"><span>타임라인 클릭/드래그: 공정 이동 · Space: 재생/정지 · ← →: 이전/다음 단계 · 드래그: 회전 · 휠: 확대/축소</span></div>
+<svg id="callout"><polyline/><circle class="ring" r="6"/><circle class="pip" r="2.4"/><text><tspan class="kr"></tspan><tspan class="en" dx="8"></tspan></text></svg>
+<div id="oplabels"></div>
+<div id="timeline"><button class="tb" id="play" title="재생/정지 (Space)">❚❚</button><div id="chips"></div></div>
+<aside id="info"></aside>
+
+<script src="three.min.js"></script>
+<script>
+if(!window.THREE){document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>')}
+</script>
+<script>
+/* ======================================================= 데이터: 공정 단계 */
+const STEPS = [
+  {name:'기판 준비', en:'Substrate preparation', dur:4.5, col:'#6c5fc9',
+    summary:'SiO₂/Si 기판을 세정해 유기물·먼지를 없애고 표면을 균일하게 만듭니다.',
+    caption:'기판이 올라오고, 빛이 표면을 쓸고 지나가며 깨끗해진 표면을 보여줍니다.',
+    roles:['아세톤 → IPA 초음파 세정 → N₂ 건조','UV-O₃ / O₂ 플라즈마로 잔여 유기물 제거','(선택) OTS·HMDS 처리 → 소수성 표면, 결정성 ↑'],
+    cond:['SiO₂ 300 nm / n⁺⁺ Si 기판','초음파 세정 각 10 min'], leg:[]},
+  {name:'드롭캐스팅', en:'Drop-casting', dur:6, col:'#3b8fd1',
+    summary:'C8-BTBT 용액을 피펫으로 기판 위에 떨어뜨려 넓게 퍼지게 합니다.',
+    caption:'피펫 끝에서 방울이 떨어져 기판 위로 퍼지고, 용액 속 C8-BTBT 분자(노란 막대)가 무질서하게 떠다닙니다.',
+    roles:['용액이 표면을 적시며 퍼짐 → 젖음성이 퍼지는 면적을 결정','분자는 아직 용매에 녹아 무질서한 상태'],
+    cond:['용매: 톨루엔 또는 클로로벤젠','농도 0.5–1 wt%','부피 10–30 µL'], leg:['mol'], mol:true},
+  {name:'건조 · 단결정 성장', en:'Directional drying & single-crystal growth', dur:10, col:'#d99a16',
+    summary:'한쪽 끝에서 생긴 단 하나의 핵이, 한 방향으로 물러나는 용액 접촉선을 따라 자라 기판 전체를 덮는 단결정이 됩니다.',
+    caption:'왼쪽 끝에서 핵이 반짝 생기고, 용액이 오른쪽으로 물러나는 동안 각진 끝을 가진 하나의 결정판이 층층이(테라스) 뻗어 나갑니다.',
+    roles:['증발을 한 방향으로 유도 → 접촉선이 일정하게 후퇴','핵생성은 한 곳에서만, 이후 새 핵 없이 기존 결정만 성장 → 결정립계(grain boundary) 없음','분자가 기판에 거의 수직으로 서서 층상(lamellar) 구조 · 결정면이 드러난 각진(facet) 성장 전선','결정립계가 없어 전하 산란 ↓ → 다결정보다 이동도 ↑'],
+    cond:['기판을 살짝 기울이거나 한쪽만 열어 증발 방향 제어','덮개·용매 분위기로 증발을 느리게 (과포화를 낮게 유지 → 추가 핵생성 억제)','고비점 용매(클로로벤젠, 아니솔 등) 사용','건조 후 진공 건조로 잔류 용매 제거'], leg:['mol','sol'], mol:true},
+  {name:'PDMS 스탬프 정렬', en:'Stamp alignment', dur:4.5, col:'#4b9fbf',
+    summary:'라인 돌기가 새겨진 PDMS 스탬프를 결정막 위에 정렬해 내립니다.',
+    caption:'투명한 PDMS 스탬프가 위에서 내려옵니다. 아래쪽 줄무늬 돌기가 패턴의 원판입니다.',
+    roles:['돌기(접촉) 영역 = 결정이 제거되는 영역','홈(비접촉) 영역 = 결정이 남는 라인','스탬프는 세척·건조 후 사용 (표면 오염 → 패턴 불량)'],
+    cond:['선폭 / 피치: 50 µm / 100 µm','Sylgard 184, 주제:경화제 = 10:1, 70 °C 2 h 경화'], leg:[]},
+  {name:'접촉 · 흡착/흡수', en:'Contact & absorption', dur:7, col:'#c9772a',
+    summary:'돌기가 결정에 밀착하면, 닿은 부분의 C8-BTBT 분자가 PDMS에 흡착되어 속으로 흡수됩니다.',
+    caption:'돌기 아래 단결정이 줄어들며 노란 분자가 돌기 안으로 빨려 들어가고, 돌기가 점점 물듭니다. 홈 아래 결정은 그대로입니다.',
+    roles:['PDMS는 소수성·자유부피가 큰 고분자 → 소수성 저분자가 쉽게 확산·용해','C8-BTBT의 옥틸(C₈) 사슬이 PDMS의 메틸기와 친화적','밀착(conformal contact)된 부분만 선택적으로 제거','시간·온도·압력 ↑ → 흡수량 ↑ (과하면 홈 쪽 결정도 손상)'],
+    cond:['접촉 시간 수 초 – 수 분','가벼운 압력, 필요 시 약하게 가열'], leg:['mol']},
+  {name:'박리', en:'Peel-off', dur:4.5, col:'#4b9fbf',
+    summary:'스탬프를 떼어내면 흡수된 결정이 스탬프와 함께 제거됩니다.',
+    caption:'스탬프가 한쪽부터 들리며 떨어집니다. 돌기에는 흡수된 C8-BTBT가 남아 있습니다.',
+    roles:['천천히 일정한 속도로 박리 → 라인 가장자리가 깔끔','사용한 스탬프는 용매 세척 후 재사용 또는 폐기'],
+    cond:['한쪽 끝부터 천천히 박리'], leg:[]},
+  {name:'라인 패턴 완성', en:'Patterned crystal lines', dur:4, col:'#4f9a2e',
+    summary:'홈 아래에 있던 결정만 남아 C8-BTBT 단결정 라인 패턴이 완성됩니다. 모든 라인이 같은 결정 방향을 가집니다.',
+    caption:'반짝이는 줄이 남은 결정 라인입니다. 라인 사이(돌기가 닿았던 자리)는 깨끗한 SiO₂ 입니다.',
+    roles:['라인 폭 = 스탬프 홈 폭, 라인 간격 = 돌기 폭','한 단결정에서 잘라낸 라인 → 라인마다 결정 방향·특성이 균일','라인 사이 결정 제거 → 소자 간 누설전류·크로스토크 감소','이후 소스/드레인 전극(Au) 증착 → OFET 어레이'],
+    cond:['편광현미경(POM)으로 결정성·라인 확인','AFM으로 두께·단차 확인'], leg:[]},
+];
+const PART = {
+  si:{name:'Si 웨이퍼', en:'Silicon wafer (n⁺⁺)', col:'#5d6168',
+    summary:'기판이자 트랜지스터(OFET)의 게이트 전극으로 쓰이는 고농도 도핑 실리콘입니다.',
+    roles:['기계적 지지체 (매끈하고 평평함)','고농도 도핑 → 바닥 게이트 전극으로 사용'],
+    material:'n⁺⁺ 또는 p⁺⁺ Si (비저항 < 0.005 Ω·cm)'},
+  sio2:{name:'SiO₂ 절연막', en:'Thermal SiO₂ dielectric', col:'#6c5fc9',
+    summary:'결정이 자라는 표면이자 트랜지스터의 게이트 절연막입니다.',
+    roles:['게이트 절연 (300 nm일 때 Cᵢ ≈ 11.5 nF/cm²)','매끈한 표면 → 결정 핵생성·성장의 바탕','표면처리(UV-O₃, OTS·HMDS)로 젖음성 조절'],
+    material:'열산화 SiO₂ (보라~파랑 간섭색)'},
+  drop:{name:'C8-BTBT 용액', en:'C8-BTBT solution', col:'#3b8fd1',
+    summary:'저분자 유기반도체를 유기용매에 녹인 용액입니다. 증발하면서 분자가 모여 결정이 됩니다.',
+    roles:['용매 끓는점·농도 → 증발 속도·결정 크기를 결정','가장자리 증발이 빨라 바깥 → 안쪽으로 결정화'],
+    material:'톨루엔, 클로로벤젠, 아니솔 등 + C8-BTBT 0.5–1 wt%'},
+  crystal:{name:'C8-BTBT 단결정', en:'Single-crystal C8-BTBT', col:'#d99a16',
+    summary:'하나의 핵에서 자란, 결정립계가 없는 판상 단결정입니다. 분자가 기판에 거의 수직으로 서서 층층이 쌓여 있습니다.',
+    roles:['BTBT 코어끼리 헤링본 패킹 → 정공(p형) 전하 이동 통로','결정립계 없음 → 전하 산란·트랩 ↓','옥틸 사슬이 층 사이를 채움 → 용해성·층상 구조 (분자층 단차 = 테라스)','높은 정공 이동도 (수 ~ 10 cm²/V·s 이상 보고)'],
+    material:'2,7-dioctyl[1]benzothieno[3,2-b][1]benzothiophene · C₃₀H₄₀S₂ · 464.8 g/mol', mol:true},
+  stamp:{name:'PDMS 스탬프', en:'Polydimethylsiloxane stamp', col:'#4b9fbf',
+    summary:'라인 돌기가 새겨진 투명한 탄성체 스탬프로, 닿는 곳의 C8-BTBT를 흡수해 떼어냅니다.',
+    roles:['낮은 표면에너지·탄성 → 결정과 고르게(conformal) 밀착','소수성 고분자 망 → 소수성 저분자가 확산해 들어감','마스터 몰드(Si / SU-8)에서 복제 경화'],
+    material:'Sylgard 184 (주제:경화제 = 10:1)'},
+  ridge:{name:'스탬프 돌기', en:'Stamp ridge (contact area)', col:'#c9772a',
+    summary:'결정과 직접 맞닿는 부분 — 이 아래의 결정만 흡수되어 사라집니다.',
+    roles:['돌기 폭 = 제거되는 폭','홈(돌기 사이) 폭 = 남는 결정 라인 폭','흡수된 분자는 스탬프 안에 남아 함께 떨어져 나감'],
+    material:'PDMS (스탬프와 일체)'},
+  pipette:{name:'마이크로 피펫', en:'Micropipette', col:'#8a8f98',
+    summary:'정해진 부피의 용액을 기판 위에 떨어뜨립니다.',
+    roles:['부피 10–30 µL','떨어뜨린 부피·퍼진 면적 → 결정막 두께'],
+    material:'PP 일회용 팁'},
+};
+
+/* ======================================================= 유틸 */
+const clamp01 = u => Math.max(0, Math.min(1, u));
+const eio = u => 0.5 - 0.5 * Math.cos(Math.PI * clamp01(u));
+const ramp = (u, a = .1, b = .1) => clamp01(u / a) * clamp01((1 - u) / b);
+function seeded(seed){ let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
+const RN = (() => { const r = seeded(42); return Array.from({length: 512}, () => r()); })();
+const rr = (k, j) => RN[(k * 37 + j * 11) % 512];
+
+/* ======================================================= 패턴 기하 */
+const R = 80;                 // 라벨 배치 기준
+const EX = 134.5, EZ = 104.5; // 기판 윗면 반폭 (결정이 덮는 영역)
+const DA = 133, DB = 103;     // 퍼진 용액 반폭 (둥근 사각형)
+const sNorm = (x, z) => Math.pow(Math.pow(Math.abs(x) / DA, 6) + Math.pow(Math.abs(z) / DB, 6), 1 / 6);
+const HW = 11, PER = 22;      // 돌기 폭 = 홈 폭 = 11, 피치 22
+const isRidge = x => ((Math.floor(x / HW) % 2) + 2) % 2 === 0;
+const RIDGE_X = [], GAP_X = [];
+for (let k = -6; k <= 5; k++){ RIDGE_X.push(k * PER + HW / 2); GAP_X.push(k * PER + HW * 1.5); }
+const STAMP_W = 290, STAMP_D = 222, CONTACT = 1.9;
+
+// 단결정: 하나의 핵(왼쪽 가장자리 중앙)에서 출발해 +x 방향으로 자라는 하나의 결정판.
+// 분자층(테라스) 3겹, 패턴 경계(x = 11의 배수)와 z 방향으로 미리 잘게 나눠 둠 → 흡수 연출용
+const SEGS = [], LAYERS = 3, LAYER_T = .75, NZ = 26, ZW = 2 * EZ / NZ;
+(() => {
+  const rng = seeded(5);
+  for (let b = Math.floor(-EX / HW) * HW; b < EX; b += HW){
+    const sx = Math.max(-EX, b), ex = Math.min(EX, b + HW); if (ex - sx < .3) continue;
+    for (let j = 0; j < NZ; j++){
+      const zc = -EZ + ZW * (j + .5);
+      for (let l = 0; l < LAYERS; l++)
+        SEGS.push({sx, ex, zc, l, ridge: isRidge((sx + ex) / 2), j: rng(), q: new THREE.Quaternion()});
+    }
+  }
+})();
+const XF_END = EX + .38 * EZ + 18;
+const growFront = u => -EX - 2 + (XF_END + EX + 2) * clamp01((u - .06) / .8);    // 결정 끝(가운데) x 위치
+const tri = v => Math.abs((v % 1 + 1) % 1 - .5) * 2;
+const frontAt = (XF, z, l) => XF - .38 * Math.abs(z) - 5 * l - 2.4 * tri(z / 13);   // 각진(facet) 성장 전선
+
+/* ======================================================= 입자 아이콘 */
+function iconTex(draw){ const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  g.translate(64, 64); draw(g); const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return t; }
+function ci(g, x, y, r, f, s){ g.beginPath(); g.arc(x, y, r, 0, 7); g.fillStyle = f; g.fill(); if (s){ g.lineWidth = 3; g.strokeStyle = s; g.stroke(); } }
+function radial(g, stops){ const gr = g.createRadialGradient(0, 0, 0, 0, 0, 64); stops.forEach(([o, c]) => gr.addColorStop(o, c)); g.fillStyle = gr; g.fillRect(-64, -64, 128, 128); }
+function molIcon(g){
+  g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = '#7d828c'; g.lineWidth = 6;
+  for (const s of [-1, 1]){ g.beginPath(); g.moveTo(s * 20, 0); for (let i = 1; i <= 5; i++) g.lineTo(s * (20 + i * 8.4), i % 2 ? -7 : 0); g.stroke(); }
+  g.fillStyle = '#f2b632'; g.strokeStyle = '#a86f0a'; g.lineWidth = 3.5;
+  g.beginPath(); g.moveTo(-24, -11); g.lineTo(24, -11); g.quadraticCurveTo(30, 0, 24, 11); g.lineTo(-24, 11); g.quadraticCurveTo(-30, 0, -24, -11); g.fill(); g.stroke();
+  ci(g, -6, -4, 4.5, '#fff6b0'); ci(g, 6, 4, 4.5, '#fff6b0');
+}
+const ICON = {
+  mol: iconTex(molIcon),
+  sol: iconTex(g => { ci(g, 0, 0, 30, '#9fd3f5', '#3d8fc8'); ci(g, -9, -9, 9, 'rgba(255,255,255,.75)'); }),
+  flash: iconTex(g => radial(g, [[0, 'rgba(255,250,210,1)'], [.25, 'rgba(255,225,110,.85)'], [1, 'rgba(255,200,60,0)']])),
+  glow: iconTex(g => radial(g, [[0, 'rgba(255,255,255,1)'], [.3, 'rgba(225,235,255,.6)'], [1, 'rgba(200,215,255,0)']])),
+};
+const SZ = {mol: 15, sol: 8, flash: 50, glow: 150};
+const ADD = {flash: 1, glow: 1};
+function makePool(n, parent){
+  const a = [];
+  for (let i = 0; i < n; i++){
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({map: ICON.mol, transparent: true, depthWrite: false}));
+    s.visible = false; s.raycast = () => {}; s.renderOrder = 20; parent.add(s); a.push(s);
+  }
+  return a;
+}
+function showParticles(pool, list){
+  let i = 0;
+  for (const q of list){
+    if (i >= pool.length) break;
+    if (q.a < 0.02) continue;
+    const s = pool[i++]; s.visible = true;
+    s.material.map = ICON[q.k]; s.material.opacity = q.a;
+    s.material.blending = ADD[q.k] ? THREE.AdditiveBlending : THREE.NormalBlending;
+    s.position.set(q.p[0], q.p[1], q.p[2]);
+    const sc = SZ[q.k] * (q.s || 1); s.scale.set(sc, sc, 1);
+  }
+  for (; i < pool.length; i++) pool[i].visible = false;
+}
+
+/* ======================================================= 씬 */
+const canvas = document.getElementById('gl');
+const renderer = new THREE.WebGLRenderer({canvas, antialias: true, alpha: true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputEncoding = THREE.sRGBEncoding;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(22, 1, 10, 30000);
+const CAM_DIR = new THREE.Vector3(0.42, 0.62, 0.95).normalize();
+let camDist = 1800, camDistT = 1800;
+const LOOK = new THREE.Vector3(0, 38, 0);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8a90a0, 0.85));
+const sun = new THREE.DirectionalLight(0xffffff, 0.8); sun.position.set(-400, 900, 600); scene.add(sun);
+const fill = new THREE.DirectionalLight(0xffffff, 0.3); fill.position.set(600, 200, -300); scene.add(fill);
+
+const world = new THREE.Group(); scene.add(world);
+const pickables = [];
+function tagPart(o, part){ o.traverse(m => { m.userData.part = part; }); pickables.push(o); }
+
+// 그림자
+const shTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d');
+  const gr = g.createRadialGradient(128, 128, 10, 128, 128, 128); gr.addColorStop(0, 'rgba(60,70,90,.35)'); gr.addColorStop(1, 'rgba(60,70,90,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 256, 256); return new THREE.CanvasTexture(c); })();
+const shadow = new THREE.Mesh(new THREE.PlaneGeometry(470, 380), new THREE.MeshBasicMaterial({map: shTex, transparent: true, depthWrite: false}));
+shadow.rotation.x = -Math.PI / 2; shadow.position.y = -26; shadow.raycast = () => {}; world.add(shadow);
+
+// 기판
+function cvTex(w, h, draw){ const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 8; return t; }
+const sub = new THREE.Group(); world.add(sub);
+const sioTop = cvTex(512, 400, (g, w, h) => {
+  const gr = g.createLinearGradient(0, 0, w, h); gr.addColorStop(0, '#7f72de'); gr.addColorStop(.5, '#6a62cf'); gr.addColorStop(1, '#5a6fd2');
+  g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  const r = seeded(3); for (let i = 0; i < 2500; i++){ g.fillStyle = `rgba(255,255,255,${r() * .05})`; g.fillRect(r() * w, r() * h, 2, 2); }
+  g.strokeStyle = 'rgba(40,30,110,.6)'; g.lineWidth = 5; g.strokeRect(2, 2, w - 4, h - 4);
+});
+const subMats = [];
+const sioMatTop = new THREE.MeshStandardMaterial({map: sioTop, roughness: .25, metalness: .15});
+const sioMatSide = new THREE.MeshStandardMaterial({color: 0x5b52b8, roughness: .3, metalness: .1});
+const siMat = new THREE.MeshStandardMaterial({color: 0x585c63, roughness: .35, metalness: .55});
+subMats.push(sioMatTop, sioMatSide, siMat);
+const siMesh = new THREE.Mesh(new THREE.BoxGeometry(270, 16, 210), siMat); siMesh.position.y = -12; sub.add(siMesh); tagPart(siMesh, 'si');
+const sioMesh = new THREE.Mesh(new THREE.BoxGeometry(270, 4, 210), [sioMatSide, sioMatSide, sioMatTop, sioMatSide, sioMatSide, sioMatSide]);
+sioMesh.position.y = -2; sub.add(sioMesh); tagPart(sioMesh, 'sio2');
+
+// 결정 (인스턴스)
+const crystalMat = new THREE.MeshStandardMaterial({roughness: .28, metalness: .2, emissive: 0x000000});
+const crystals = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), crystalMat, SEGS.length);
+crystals.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+const CRY_COLS = ['#d6bf7e', '#e3d09a', '#efe2b6'].map(c => new THREE.Color(c));   // 한 결정 = 균일한 색, 층(테라스)만 명암 차이
+SEGS.forEach((g, i) => crystals.setColorAt(i, CRY_COLS[g.l]));
+crystals.instanceColor.needsUpdate = true;
+world.add(crystals); tagPart(crystals, 'crystal');
+
+// 용액 방울
+const dropMat = new THREE.MeshStandardMaterial({color: 0xbfe0f5, transparent: true, opacity: .5, roughness: .06, metalness: .1, depthWrite: false});
+const dropGeo = new THREE.SphereGeometry(1, 96, 24, 0, Math.PI * 2, 0, Math.PI / 2);
+(() => {   // 반구 → 둥근 사각형 퍼들 (기판을 가득 덮도록)
+  const pos = dropGeo.attributes.position;
+  for (let i = 0; i < pos.count; i++){
+    const x = pos.getX(i), z = pos.getZ(i), rho = Math.hypot(x, z); if (rho < 1e-6) continue;
+    const c = x / rho, s = z / rho, k = Math.pow(Math.pow(Math.abs(c), 6) + Math.pow(Math.abs(s), 6), -1 / 6);
+    pos.setX(i, x * k); pos.setZ(i, z * k);
+  }
+  dropGeo.computeVertexNormals();
+})();
+const dropMesh = new THREE.Mesh(dropGeo, dropMat);
+dropMesh.position.y = .2; world.add(dropMesh); tagPart(dropMesh, 'drop');
+const fallMat = dropMat.clone(); fallMat.opacity = .65; const fallDrop = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 18), fallMat); world.add(fallDrop); tagPart(fallDrop, 'drop');
+
+// 피펫
+const pip = new THREE.Group(); world.add(pip);
+const tipMat = new THREE.MeshStandardMaterial({color: 0xf2f4f6, roughness: .35, transparent: true, opacity: .85});
+const pipBodyMat = new THREE.MeshStandardMaterial({color: 0x8a8f98, roughness: .4, metalness: .3, transparent: true});
+const tip = new THREE.Mesh(new THREE.CylinderGeometry(6.5, 1.4, 50, 24), tipMat); tip.position.y = 25; pip.add(tip);
+const pbody = new THREE.Mesh(new THREE.CylinderGeometry(9.5, 8, 80, 24), pipBodyMat); pbody.position.y = 50 + 40; pip.add(pbody);
+tagPart(pip, 'pipette');
+
+// PDMS 스탬프 (박리를 위해 오른쪽 아래 모서리 피벗)
+const stampPivot = new THREE.Group(); world.add(stampPivot);
+const stamp = new THREE.Group(); stamp.position.x = -STAMP_W / 2; stampPivot.add(stamp);
+const PDMS_COL = new THREE.Color(0xcfe6ef), TINT_COL = new THREE.Color(0xf2d98a);
+const pdmsMat = new THREE.MeshStandardMaterial({color: PDMS_COL, transparent: true, opacity: .38, roughness: .1, depthWrite: false});
+const ridgeMat = new THREE.MeshStandardMaterial({color: PDMS_COL.clone(), transparent: true, opacity: .5, roughness: .15, depthWrite: false, emissive: 0x000000});
+const edgeMat = new THREE.LineBasicMaterial({color: 0x4b8aa3, transparent: true, opacity: .6});
+const ridgeEdgeMat = new THREE.LineBasicMaterial({color: 0x4b8aa3, transparent: true, opacity: .45});
+const bodyGeo = new THREE.BoxGeometry(STAMP_W, 24, STAMP_D);
+const stampBody = new THREE.Mesh(bodyGeo, pdmsMat); stampBody.position.set(0, 6 + 12, 0); stamp.add(stampBody);
+const bodyEdge = new THREE.LineSegments(new THREE.EdgesGeometry(bodyGeo), edgeMat); bodyEdge.position.copy(stampBody.position); bodyEdge.raycast = () => {}; stamp.add(bodyEdge);
+tagPart(stampBody, 'stamp');
+const ridgeGeo = new THREE.BoxGeometry(HW, 6, STAMP_D), ridgeEdgeGeo = new THREE.EdgesGeometry(ridgeGeo);
+[...Array(16)].map((_, i) => (i - 8) * PER + HW / 2).forEach(x => {
+  if (Math.abs(x) > STAMP_W / 2 - HW / 2) return;
+  const m = new THREE.Mesh(ridgeGeo, ridgeMat); m.position.set(x, 3, 0); stamp.add(m); tagPart(m, 'ridge');
+  const e = new THREE.LineSegments(ridgeEdgeGeo, ridgeEdgeMat); e.position.copy(m.position); e.raycast = () => {}; stamp.add(e);
+});
+
+const fxPool = makePool(420, world);
+
+/* ======================================================= 상태 */
+let cur = {s: 0, u: 0}, playing = true, partView = null;
+let hovered = null, hoverLocal = new THREE.Vector3(), calloutT = 0, calloutKey = null;
+let dragging = false, lastX = 0, lastY = 0, moved = 0;
+let rotY = 0, rotYT = 0, rotX = 0, rotXT = 0;
+const mouse = new THREE.Vector2(-9, -9);
+const ray = new THREE.Raycaster();
+const active = {};   // 지금 보이는(선택 가능한) 부품
+
+/* ======================================================= 장면 상태 (단계 s, 진행 u) */
+const _m = new THREE.Matrix4(), _p = new THREE.Vector3(), _s = new THREE.Vector3();
+function setOp(mats, a, base = 1){ mats.forEach(m => { m.opacity = a * base; m.transparent = a * base < .999 || m === dropMat; m.depthWrite = a * base >= .999; }); }
+
+function apply(s, u, time){
+  const P = [], L = [];
+  for (const k in active) active[k] = false;
+
+  /* --- 기판 */
+  const fs = s === 0 ? eio(u / .35) : 1;
+  sub.position.y = -40 * (1 - fs); setOp(subMats, fs); shadow.material.opacity = fs;
+  active.si = active.sio2 = fs > .5;
+  if (s === 0 && u > .38){ const v = clamp01((u - .38) / .5);
+    P.push({k: 'glow', p: [-150 + 300 * eio(v), 3, -60 + 120 * eio(v)], a: Math.sin(Math.PI * v) * .9}); }
+  if (s === 0){ const a = clamp01((u - .3) / .15);
+    L.push({html: '<span style="color:#6c5fc9">SiO₂</span> 절연막 (300 nm)', p: [70, 8, 108], a});
+    L.push({html: '<span style="color:#585c63">Si</span> 웨이퍼 (게이트)', p: [70, -24, 112], a});
+    if (u > .45) L.push({html: '✦ 세정 (UV-O₃)', p: [-40, 34, 0], a: ramp((u - .45) / .55, .15, .2)}); }
+
+  /* --- 피펫 & 떨어지는 방울 */
+  let pipA = 0, tipY = 260;
+  if (s === 1){
+    if (u < .15){ tipY = 260 - 160 * eio(u / .15); pipA = eio(u / .1); }
+    else if (u < .62) tipY = 100, pipA = 1;
+    else { const v = (u - .62) / .3; tipY = 100 + 170 * eio(v); pipA = 1 - eio(v); }
+  }
+  pip.visible = pipA > .01; pip.position.y = tipY; tipMat.opacity = .85 * pipA; pipBodyMat.opacity = pipA;
+  pipBodyMat.transparent = pipA < .999; active.pipette = pipA > .5;
+  fallDrop.visible = false;
+  if (s === 1 && u >= .15 && u < .42){
+    const rd = 13; let r, y;
+    if (u < .3){ r = rd * eio((u - .15) / .15); y = tipY - r * .95; }
+    else { const v = (u - .3) / .12; r = rd; y = (tipY - rd) - (tipY - rd - rd * .9) * v * v; }
+    fallDrop.visible = r > .3; fallDrop.scale.set(r, r * (u > .3 ? 1.1 : 1), r); fallDrop.position.set(0, y, 0); active.drop = true;
+  }
+  if (s === 1 && u < .62) L.push({html: '피펫: C8-BTBT 용액', p: [-34, tipY + 40, 0], a: pipA});
+
+  /* --- 용액 방울 */
+  let dx = 0, dz = 0, dh = 0, dA = 0;   // 퍼들 반폭 (x, z), 높이
+  if (s === 1 && u >= .42){ const f = 1 - Math.pow(1 - clamp01((u - .42) / .3), 3); dx = 15 + (DA - 15) * f; dz = 15 + (DB - 15) * f; dh = 20 - 8 * f; dA = 1; }
+  let dcx = 0, left = -DA;   // 퍼들 중심 x, 왼쪽 접촉선
+  if (s === 2){   // 접촉선이 한 방향(+x)으로 물러남 → 그 뒤를 단결정이 따라 자람
+    left = Math.max(-DA, Math.min(DA, growFront(u) + 3));
+    dx = (DA - left) / 2; dcx = (DA + left) / 2; dz = DB; dh = 12 * (1 - .5 * clamp01(u / .85));
+    dA = clamp01(dx / 8) * (1 - clamp01((u - .82) / .1));
+  }
+  dropMesh.position.x = dcx;
+  dropMesh.visible = dA > .01 && dx > .5; dropMesh.scale.set(Math.max(dx, .01), Math.max(dh, .01), Math.max(dz, .01));
+  dropMat.opacity = .5 * dA; if (dropMesh.visible) active.drop = true;
+  const surf = (rn) => 1 + dh * Math.sqrt(Math.max(0, 1 - rn * rn));   // rn: 정규화 반경
+  if (s === 1 && u > .45){
+    for (let k = 0; k < 40; k++){
+      const rn = Math.sqrt(rr(k, 1)) * .85, ph = 2 * Math.PI * rr(k, 2) + time * .5 * (rr(k, 3) - .5);
+      P.push({k: 'mol', p: [rn * dx * Math.cos(ph), 1.5 + (surf(rn) - 4) * rr(k, 4), rn * dz * Math.sin(ph)], a: clamp01((u - .45) / .1), s: .75});
+    }
+    L.push({html: '<span style="color:#3b8fd1">C8-BTBT 용액</span> — 기판 전체로 퍼짐', p: [0, 32, R * .55], a: clamp01((u - .55) / .1)});
+  }
+  if (s === 2 && dA > .01){
+    for (let k = 0; k < 40; k++){   // 분자가 접촉선(결정 끝) 쪽으로 이동
+      const v = (time / 2.4 + k / 40) % 1, xs = left + 2 * dx * (.25 + .75 * rr(k, 5)), x = xs - (xs - left - 2) * v;
+      P.push({k: 'mol', p: [x, 1.5 + .35 * dh * (1 - v), (rr(k, 8) - .5) * 1.7 * dz], a: ramp(v, .1, .15) * dA, s: .7});
+    }
+    for (let k = 0; k < 48; k++){
+      const v = (time / 2.8 + k / 48) % 1, xn = rr(k, 6) * 2 - 1, zn = (rr(k, 7) * 2 - 1) * .9;
+      P.push({k: 'sol', p: [dcx + xn * dx * .9, surf(Math.abs(xn) * .9) + 85 * v, zn * dz], a: ramp(v, .1, .35) * .9 * dA});
+    }
+    L.push({html: '<span style="color:#3b8fd1">●</span> 용매 증발 ↑', p: [dcx, 92, 0], a: dA});
+    L.push({html: '<span style="color:#f2b632">▬</span> 분자가 결정 끝으로 공급', p: [left + 30, 22, dz * .55], a: dA * clamp01(dx / 40)});
+  }
+  if (s === 2){
+    L.push({html: '✦ 단일 핵 생성', p: [-EX + 4, 14, 0], a: ramp(clamp01((u - .03) / .4), .2, .3)});
+    L.push({html: '<span style="color:#d99a16">단결정</span> 성장 방향 →', p: [Math.min(EX - 40, Math.max(-EX + 40, growFront(u) - 50)), 8, EZ * .55], a: clamp01((u - .25) / .1)});
+  }
+
+  /* --- 스탬프 */
+  let sA = 0, sy = 160, rz = 0, tint = 0;
+  if (s === 3){ sA = eio(u / .25); sy = 160 - (160 - 14) * eio((u - .15) / .7); }
+  if (s === 4){ sA = 1; sy = 14 - (14 - CONTACT) * eio(u / .12); tint = eio(clamp01((u - .15) / .7)); }
+  if (s === 5){ sA = 1; tint = 1; sy = CONTACT + 150 * eio(clamp01((u - .3) / .7)); rz = -.2 * Math.sin(Math.PI * clamp01(u / .85)); }
+  if (s === 6){ tint = 1; sA = 1 - eio(u / .3); }
+  stampPivot.visible = sA > .01; stampPivot.position.set(STAMP_W / 2, sy, 0); stampPivot.rotation.z = rz;
+  pdmsMat.opacity = .38 * sA; ridgeMat.opacity = (.5 + .3 * tint) * sA;
+  ridgeMat.color.copy(PDMS_COL).lerp(TINT_COL, tint); ridgeMat.emissive.setRGB(.12 * tint, .08 * tint, 0);
+  edgeMat.opacity = .6 * sA; ridgeEdgeMat.opacity = .45 * sA;
+  active.stamp = active.ridge = sA > .5;
+  if (s === 3){ const a = clamp01((u - .3) / .15);
+    L.push({html: '<span style="color:#4b9fbf">PDMS</span> 스탬프', p: [-100, sy + 40, 0], a});
+    L.push({html: '라인 돌기 (폭 = 홈 폭)', p: [RIDGE_X[7], sy - 6, 105], a: clamp01((u - .5) / .15)}); }
+  if (s === 4){ const a = clamp01((u - .15) / .1);
+    L.push({html: '돌기가 닿은 곳 → <span style="color:#c9772a">C8-BTBT 흡수</span>', p: [RIDGE_X[7], 46, 108], a});
+    L.push({html: '홈 아래 결정은 그대로', p: [GAP_X[3], 8, -55], a: clamp01((u - .5) / .1)}); }
+  if (s === 5){
+    L.push({html: '흡수된 결정이 스탬프와 함께 제거', p: [-30, sy + 46 + 100 * Math.sin(-rz) , 0], a: clamp01((u - .15) / .1) * (1 - clamp01((u - .85) / .1))});
+    L.push({html: '<span style="color:#d99a16">C8-BTBT 라인</span> 남음', p: [GAP_X[6], 6, R * .78], a: clamp01((u - .5) / .1)}); }
+
+  /* --- 결정 (성장 / 흡수) */
+  crystals.visible = s >= 2; active.crystal = s >= 2;
+  const XFc = s < 2 ? -1e4 : s === 2 ? growFront(u) : 1e4;
+  SEGS.forEach((g, i) => {
+    let ab = 0;
+    if (g.ridge){ if (s > 4) ab = 1; else if (s === 4) ab = clamp01((u - .15 - g.j * .25) / .45); }
+    const f = frontAt(XFc, g.zc, g.l), Lg = Math.max(0, Math.min(g.ex, f) - g.sx);
+    const ae = eio(ab), T = LAYER_T * (1 - ae);
+    if (Lg < .05 || T < .03) _s.set(1e-4, 1e-4, 1e-4);
+    else _s.set(Lg, T, ZW * (1 - .4 * ae) + .02);
+    const cx = g.sx + Lg / 2;
+    _p.set(cx, .15 + g.l * LAYER_T + T / 2 + 4 * ae, g.zc); _m.compose(_p, g.q, _s); crystals.setMatrixAt(i, _m);
+    if (s === 4 && g.ridge && g.l === LAYERS - 1 && i % 2 === 0 && ab > 0 && ab < 1)
+      P.push({k: 'mol', p: [cx + (g.j - .5) * 6, 3 + 9 * ab, g.zc], a: Math.sin(Math.PI * ab), s: .6});
+  });
+  if (s === 2 && u > .03 && u < .4)   // 단일 핵 생성 반짝임
+    P.push({k: 'flash', p: [-EX + 4, 3, 0], a: Math.sin(Math.PI * clamp01((u - .03) / .37)), s: 1.1});
+  crystals.instanceMatrix.needsUpdate = true;
+  const pulse = s === 6 ? (.5 + .5 * Math.sin(time * 3)) * clamp01(u / .3 + .3) : 0;
+  crystalMat.emissive.setRGB(.28 * pulse, .2 * pulse, .04 * pulse);
+  if (s === 6){ const a = clamp01((u - .15) / .15);
+    L.push({html: '<span style="color:#d99a16">C8-BTBT 단결정 라인</span> (홈 자리)', p: [GAP_X[6], 6, R * .8], a});
+    L.push({html: '<span style="color:#6c5fc9">SiO₂</span> 노출 (돌기 자리)', p: [RIDGE_X[4], 2, -R * .85], a: clamp01((u - .3) / .15)});
+    L.push({html: '선폭 w · 피치 2w', p: [GAP_X[8] + 30, 6, 30], a: clamp01((u - .45) / .15)}); }
+
+  return {P, L};
+}
+
+/* ======================================================= 라벨 */
+const labelBox = document.getElementById('oplabels'), labelPool = [];
+const tmp3 = new THREE.Vector3();
+function showLabels(list){
+  list.forEach((d, i) => {
+    let el = labelPool[i];
+    if (!el){ el = document.createElement('div'); el.className = 'opl'; labelBox.appendChild(el); labelPool.push(el); }
+    if (el._h !== d.html){ el.innerHTML = d.html; el._h = d.html; }
+    tmp3.set(d.p[0], d.p[1], d.p[2]); world.localToWorld(tmp3); tmp3.project(camera);
+    el.style.left = ((tmp3.x + 1) / 2 * innerWidth) + 'px'; el.style.top = ((1 - tmp3.y) / 2 * innerHeight) + 'px';
+    el.style.opacity = d.a;
+  });
+  for (let i = list.length; i < labelPool.length; i++) labelPool[i].style.opacity = 0;
+}
+
+/* ======================================================= 단면 모식도 (SVG) */
+function mU(x, yb, op = 1){   // 기판에 서 있는 분자
+  return `<g opacity="${op}"><line x1="${x}" y1="${yb}" x2="${x}" y2="${yb - 14}" stroke="#8b9099" stroke-width="1.3"/>` +
+         `<rect x="${x - 1.8}" y="${yb - 10}" width="3.6" height="6" rx="1.2" fill="#f2b632" stroke="#a86f0a" stroke-width=".6"/></g>`;
+}
+function mR(x, y, a, sc = 1){ // 기울어진(무질서한) 분자
+  return `<g transform="translate(${x} ${y}) rotate(${a}) scale(${sc})"><line x1="-7" y1="0" x2="7" y2="0" stroke="#8b9099" stroke-width="1.3"/>` +
+         `<rect x="-3" y="-1.8" width="6" height="3.6" rx="1.2" fill="#f2b632" stroke="#a86f0a" stroke-width=".6"/></g>`;
+}
+const sRidge = x => x >= 16 && ((Math.floor((x - 16) / 32) % 2) + 2) % 2 === 0;
+function crystalSVG(only){   // only: 'gap' → 홈 자리만
+  let o = '';
+  for (let x = 8; x <= 344; x += 5){ if (only === 'gap' && sRidge(x)) continue; o += mU(x, 136) + mU(x + 2.5, 122); }
+  return o;
+}
+function stampSVG(yb, absorbed){  // yb: 돌기 아래 끝
+  let o = `<rect x="0" y="${yb - 52}" width="352" height="40" fill="rgba(190,225,238,.6)" stroke="#6aa6bd"/>`;
+  for (let x = 16; x < 352; x += 64){
+    const w = Math.min(32, 352 - x);
+    o += `<rect x="${x}" y="${yb - 12}" width="${w}" height="12" fill="${absorbed ? 'rgba(242,217,138,.75)' : 'rgba(190,225,238,.7)'}" stroke="#6aa6bd"/>`;
+    if (absorbed) for (let k = 0; k < 4; k++) o += mR(x + 5 + k * 7.5, yb - 6 - (k % 2) * 10, 20 + k * 47, .75);
+  }
+  o += `<text x="8" y="${yb - 36}" font-size="11" fill="#2f6f88" font-weight="700">PDMS</text>`;
+  return o;
+}
+function sectionSVG(s){
+  let o = `<svg class="sect" viewBox="0 0 352 172" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Malgun Gothic, sans-serif">`;
+  o += `<rect x="0" y="146" width="352" height="26" fill="#5d6168"/><rect x="0" y="136" width="352" height="10" fill="#7a6fd6"/>`;
+  o += `<text x="344" y="163" font-size="10" fill="#e8e9ec" text-anchor="end">Si</text><text x="344" y="144.5" font-size="8.5" fill="#fff" text-anchor="end">SiO₂</text>`;
+  const r = seeded(9 + s);
+  if (s === 0){
+    o += `<text x="176" y="96" font-size="13" fill="#6c5fc9" text-anchor="middle" font-weight="700">✦ 깨끗한 표면 ✦</text>`;
+    for (let i = 0; i < 6; i++) o += `<path d="M${40 + i * 55} 120 l3 -7 l3 7 l-3 7z" fill="#b9b2f0"/>`;
+  }
+  if (s === 1){
+    o += `<path d="M30 136 Q176 40 322 136 Z" fill="rgba(160,205,240,.45)" stroke="#7fb3de"/>`;
+    for (let i = 0; i < 30; i++){ const t = .1 + .8 * r(), x = 30 + 292 * t, top = 136 - 192 * t * (1 - t);
+      o += mR(x, 132 - (132 - top - 8) * r(), r() * 180); }
+    o += `<text x="176" y="74" font-size="11" fill="#2f6f9e" text-anchor="middle">용액 속 분자: 무질서</text>`;
+  }
+  if (s === 2){
+    o += crystalSVG();
+    for (let i = 0; i < 14; i++) o += `<circle cx="${20 + r() * 312}" cy="${30 + r() * 64}" r="${2.5 + r() * 2}" fill="#9fd3f5" stroke="#3d8fc8" stroke-width=".8"/>`;
+    o += `<text x="176" y="20" font-size="11" fill="#2f6f9e" text-anchor="middle">↑ 용매 증발</text>`;
+    o += `<text x="176" y="104" font-size="10.5" fill="#7a5508" text-anchor="middle">분자가 수직으로 서서 층층이 쌓인 단결정 (결정립계 없음)</text>`;
+  }
+  if (s === 3){ o += crystalSVG() + stampSVG(78) + `<text x="176" y="96" font-size="13" fill="#2f6f88" text-anchor="middle">↓ ↓ ↓</text>`; }
+  if (s === 4){
+    o += crystalSVG('gap') + stampSVG(108, true);
+    for (let x = 16; x < 352; x += 64){ const w = Math.min(32, 352 - x); o += `<text x="${x + w / 2}" y="${50}" font-size="11" fill="#c9772a" text-anchor="middle">↑</text>`; }
+    o += `<text x="176" y="26" font-size="10.5" fill="#7a5508" text-anchor="middle">돌기가 닿은 곳의 분자 → PDMS 속으로 흡수</text>`;
+  }
+  if (s === 5){ o += crystalSVG('gap') + stampSVG(64, true) + `<text x="176" y="100" font-size="13" fill="#2f6f88" text-anchor="middle">↑ 박리 ↑</text>`; }
+  if (s === 6){
+    o += crystalSVG('gap');
+    o += `<path d="M48 98 v6 M80 98 v6 M48 101 H80" stroke="#7a5508" fill="none"/><text x="64" y="94" font-size="10.5" fill="#7a5508" text-anchor="middle">w (라인)</text>`;
+    o += `<path d="M48 70 v6 M112 70 v6 M48 73 H112" stroke="#555" fill="none"/><text x="80" y="66" font-size="10.5" fill="#555" text-anchor="middle">피치</text>`;
+    o += `<text x="250" y="90" font-size="10.5" fill="#6c5fc9" text-anchor="middle">라인 사이 = 깨끗한 SiO₂</text>`;
+  }
+  return o + '</svg>';
+}
+
+/* ======================================================= C8-BTBT 분자 구조 (SVG) */
+function moleculeSVG(){
+  const b = 14, segs = [], atoms = [], circles = [];
+  const ang = (p, c) => Math.atan2(p[1] - c[1], p[0] - c[0]);
+  function ring(P, Q, n, away){   // P-Q 변을 공유하는 정n각형 (away 반대쪽으로)
+    const mx = (P[0] + Q[0]) / 2, my = (P[1] + Q[1]) / 2, ex = Q[0] - P[0], ey = Q[1] - P[1], L = Math.hypot(ex, ey);
+    let nx = -ey / L, ny = ex / L; if ((away[0] - mx) * nx + (away[1] - my) * ny > 0){ nx = -nx; ny = -ny; }
+    const apo = b / (2 * Math.tan(Math.PI / n)), rc = b / (2 * Math.sin(Math.PI / n)), c = [mx + nx * apo, my + ny * apo];
+    let a0 = ang(P, c), d = ang(Q, c) - a0; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
+    const v = []; for (let k = 0; k < n; k++) v.push([c[0] + rc * Math.cos(a0 + d * k), c[1] + rc * Math.sin(a0 + d * k)]);
+    for (let k = 0; k < n; k++) segs.push([v[k], v[(k + 1) % n]]);
+    return {v, c};
+  }
+  const A = [0, -b / 2], B = [0, b / 2];
+  const pr = ring(A, B, 5, [-10, 0]);                         // 오른쪽 오각형: v0=A, v1=B, v2, v3, v4
+  const pl = ring([-A[0], -A[1]], [-B[0], -B[1]], 5, [10, 0]); // 왼쪽 (점대칭)
+  atoms.push(pr.v[4], pl.v[4]);                                // S 위치 (반대편, [3,2-b])
+  const hr = ring(pr.v[2], pr.v[3], 6, pr.c), hl = ring(pl.v[2], pl.v[3], 6, pl.c);
+  circles.push(hr.c, hl.c);
+  const tails = [];
+  for (const h of [hr, hl]){
+    const sgn = h === hr ? 1 : -1;
+    let tipv = h.v.reduce((m, p) => (p[0] * sgn > m[0] * sgn ? p : m), h.v[0]);
+    const dir = [sgn, 0], pts = [tipv];
+    for (let k = 1; k <= 8; k++) pts.push([tipv[0] + dir[0] * k * b * .87, tipv[1] + (k % 2 ? -b * .5 : 0)]);
+    for (let k = 0; k < 8; k++) segs.push([pts[k], pts[k + 1]]);
+    tails.push(pts[8]);
+  }
+  const all = segs.flat(); const xs = all.map(p => p[0]), ys = all.map(p => p[1]);
+  const x0 = Math.min(...xs) - 34, x1 = Math.max(...xs) + 34, y0 = Math.min(...ys) - 14, y1 = Math.max(...ys) + 16;
+  let o = `<svg class="molsvg" viewBox="${x0} ${y0} ${x1 - x0} ${y1 - y0}" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, sans-serif">`;
+  segs.forEach(([p, q]) => o += `<line x1="${p[0]}" y1="${p[1]}" x2="${q[0]}" y2="${q[1]}" stroke="#333" stroke-width="1.6" stroke-linecap="round"/>`);
+  circles.forEach(c => o += `<circle cx="${c[0]}" cy="${c[1]}" r="${b * .52}" fill="none" stroke="#333" stroke-width="1.1"/>`);
+  atoms.forEach(p => o += `<circle cx="${p[0]}" cy="${p[1]}" r="6.5" fill="#fff"/><text x="${p[0]}" y="${p[1] + 4.2}" font-size="12" font-weight="700" fill="#b8860b" text-anchor="middle">S</text>`);
+  o += `<text x="${tails[0][0] + 4}" y="${tails[0][1] + 4}" font-size="10" fill="#666">C₈H₁₇</text>`;
+  o += `<text x="${tails[1][0] - 4}" y="${tails[1][1] + 4}" font-size="10" fill="#666" text-anchor="end">C₈H₁₇</text>`;
+  o += `<text x="0" y="${y1 - 3}" font-size="9.5" fill="#888" text-anchor="middle">BTBT 코어 (전하 이동) + 옥틸 사슬 ×2 (용해성)</text>`;
+  return o + '</svg>';
+}
+const MOL_SVG = moleculeSVG();
+
+/* ======================================================= 정보 패널 */
+const infoEl = document.getElementById('info');
+const LEG = {mol: ['#f2b632', 'C8-BTBT 분자'], sol: ['#9fd3f5', '용매 분자']};
+function renderStep(){
+  partView = null;
+  const s = cur.s, st = STEPS[s];
+  infoEl.innerHTML = `
+    <div class="top"><span class="tag" style="background:${st.col}">STEP ${s + 1}</span><span>${s + 1} / ${STEPS.length}</span></div>
+    <h2>${st.name}</h2><div class="en">${st.en}</div>
+    <div class="sum">${st.summary}</div>
+    <div class="cap">▶ ${st.caption}</div>
+    ${st.leg.length ? `<div class="legend">${st.leg.map(k => `<span><i style="background:${LEG[k][0]}"></i>${LEG[k][1]}</span>`).join('')}</div>` : ''}
+    <h4>단면 모식도</h4>${sectionSVG(s)}
+    <h4>핵심 원리</h4><ul>${st.roles.map(r => `<li>${r}</li>`).join('')}</ul>
+    ${st.cond.length ? `<h4>조건 예시</h4><ul>${st.cond.map(r => `<li>${r}</li>`).join('')}</ul>` : ''}
+    ${st.mol ? `<h4>C8-BTBT 분자 구조</h4>${MOL_SVG}` : ''}
+    <div class="note">※ 조건 값은 일반적인 예시입니다. 실제 실험 조건에 맞게 바꿔 쓰세요.</div>
+    <div class="nav"><button class="tb" data-d="-1">← 이전 단계</button><button class="tb" data-d="1">다음 단계 →</button></div>`;
+  infoEl.querySelectorAll('.nav button').forEach(b => b.onclick = () => goStep(cur.s + +b.dataset.d));
+  infoEl.scrollTop = 0;
+}
+function renderPart(key){
+  partView = key;
+  const p = PART[key];
+  infoEl.innerHTML = `
+    <div class="top"><span class="tag" style="background:${p.col}">구성 요소</span><span>STEP ${cur.s + 1} 진행 중</span>
+      <button class="x" title="공정 설명으로 (ESC)">← 공정 단계로</button></div>
+    <h2>${p.name}</h2><div class="en">${p.en}</div>
+    <div class="sum">${p.summary}</div>
+    <h4>역할</h4><ul>${p.roles.map(r => `<li>${r}</li>`).join('')}</ul>
+    <h4>소재</h4><p class="mat">${p.material}</p>
+    ${p.mol ? `<h4>분자 구조</h4>${MOL_SVG}` : ''}`;
+  infoEl.querySelector('.x').onclick = renderStep;
+  infoEl.scrollTop = 0;
+}
+
+/* ======================================================= 타임라인 */
+const chipsEl = document.getElementById('chips'), playBtn = document.getElementById('play');
+chipsEl.innerHTML = STEPS.map((st, i) => `<div class="chip" data-i="${i}"><div class="fill"></div><span class="n">${i + 1}</span><span class="t">${st.name}</span></div>`).join('');
+const chipEls = [...chipsEl.children];
+function updateChips(){
+  chipEls.forEach((el, i) => {
+    el.classList.toggle('on', i === cur.s); el.classList.toggle('done', i < cur.s);
+    el.firstChild.style.width = (i < cur.s ? 100 : i === cur.s ? cur.u * 100 : 0) + '%';
+  });
+  playBtn.textContent = playing ? '❚❚' : (cur.s === STEPS.length - 1 && cur.u >= 1 ? '↻' : '▶');
+}
+function setPos(s, u){
+  s = Math.max(0, Math.min(STEPS.length - 1, s));
+  const changed = s !== cur.s; cur.s = s; cur.u = clamp01(u);
+  if (changed || partView) renderStep();
+}
+function goStep(s){ setPos(s, 0); playing = true; }
+let scrubbing = false;
+function scrubAt(ev){
+  const el = document.elementFromPoint(ev.clientX, chipsEl.getBoundingClientRect().top + 20);
+  const chip = el && el.closest && el.closest('.chip'); if (!chip) return;
+  const r = chip.getBoundingClientRect();
+  setPos(+chip.dataset.i, (ev.clientX - r.left) / r.width);
+}
+chipsEl.addEventListener('pointerdown', ev => { scrubbing = true; playing = false; chipsEl.setPointerCapture(ev.pointerId); scrubAt(ev); });
+chipsEl.addEventListener('pointermove', ev => { if (scrubbing) scrubAt(ev); });
+chipsEl.addEventListener('pointerup', () => { scrubbing = false; });
+playBtn.onclick = togglePlay;
+function togglePlay(){
+  if (cur.s === STEPS.length - 1 && cur.u >= 1){ setPos(0, 0); playing = true; return; }
+  playing = !playing;
+}
+document.getElementById('btnRestart').onclick = () => { setPos(0, 0); playing = true; };
+document.getElementById('btnReset').onclick = () => { rotYT = 0; rotXT = 0; camDistT = fitDist(); };
+addEventListener('keydown', ev => {
+  if (ev.key === 'Escape' && partView) renderStep();
+  if (ev.key === 'ArrowRight') goStep(cur.s + 1);
+  if (ev.key === 'ArrowLeft') goStep(cur.s - 1);
+  if (ev.key === ' '){ ev.preventDefault(); togglePlay(); }
+});
+
+/* ======================================================= 마우스 */
+canvas.addEventListener('pointerdown', ev => { mouse.x = ev.clientX / innerWidth * 2 - 1; mouse.y = -(ev.clientY / innerHeight) * 2 + 1; dragging = true; moved = 0; lastX = ev.clientX; lastY = ev.clientY; canvas.setPointerCapture(ev.pointerId); });
+canvas.addEventListener('pointermove', ev => {
+  mouse.x = ev.clientX / innerWidth * 2 - 1; mouse.y = -(ev.clientY / innerHeight) * 2 + 1;
+  if (dragging){
+    const dx = ev.clientX - lastX, dy = ev.clientY - lastY; lastX = ev.clientX; lastY = ev.clientY;
+    moved += Math.abs(dx) + Math.abs(dy);
+    if (moved > 4){ canvas.classList.add('drag'); rotYT += dx * .006; rotXT = Math.max(-.45, Math.min(.6, rotXT + dy * .004)); }
+  }
+});
+canvas.addEventListener('pointerup', () => {
+  canvas.classList.remove('drag'); dragging = false;
+  if (moved > 5) return;
+  const h = pick();
+  if (h) renderPart(h.part); else if (partView) renderStep();
+});
+canvas.addEventListener('pointerleave', () => mouse.set(-9, -9));
+canvas.addEventListener('wheel', ev => { ev.preventDefault(); camDistT = Math.max(500, Math.min(6000, camDistT * (1 + Math.sign(ev.deltaY) * .1))); }, {passive: false});
+/* iPad: 두 손가락 핀치로 확대/축소 */
+(function(){ let d0 = 0, z0 = 0; const dist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  canvas.addEventListener('touchstart', e => { if (e.touches.length === 2){ d0 = dist(e.touches); z0 = camDistT; dragging = false; } }, {passive: true});
+  canvas.addEventListener('touchmove', e => { if (e.touches.length === 2 && d0){ e.preventDefault(); camDistT = Math.max(500, Math.min(6000, z0 * d0 / dist(e.touches))); } }, {passive: false});
+  canvas.addEventListener('touchend', e => { if (e.touches.length < 2) d0 = 0; }, {passive: true});
+})();
+function pick(){
+  if (mouse.x < -2) return null;
+  ray.setFromCamera(mouse, camera);
+  const objs = pickables.filter(o => o.visible && active[o.userData.part]);
+  const h = ray.intersectObjects(objs, true).find(x => x.object.userData.part && x.object.visible);
+  return h ? {part: h.object.userData.part, point: h.point} : null;
+}
+
+/* ======================================================= 콜아웃 */
+const svg = document.getElementById('callout'), cPoly = svg.querySelector('polyline'), cRing = svg.querySelector('.ring'),
+      cPip = svg.querySelector('.pip'), cText = svg.querySelector('text'), cKr = svg.querySelector('.kr'), cEn = svg.querySelector('.en');
+function updateCallout(dt){
+  const show = !!hovered;
+  if (show && calloutKey !== hovered){ calloutKey = hovered; calloutT = 0; cKr.textContent = PART[hovered].name; cEn.textContent = PART[hovered].en.replace(/ \(.*\)/, ''); }
+  calloutT = show ? Math.min(1, calloutT + dt * 3.2) : Math.max(0, calloutT - dt * 6);
+  svg.style.opacity = calloutT > 0 ? 1 : 0;
+  if (calloutT <= 0 || !calloutKey) return;
+  tmp3.copy(hoverLocal); world.localToWorld(tmp3); tmp3.project(camera);
+  const ax = (tmp3.x + 1) / 2 * innerWidth, ay = (1 - tmp3.y) / 2 * innerHeight;
+  const tw = cText.getComputedTextLength() + 14;
+  const dir = ax + 60 + tw > innerWidth - 440 ? -1 : 1;
+  const p1 = [ax + dir * 42, ay - 62], p2 = [p1[0] + dir * tw, p1[1]];
+  const seg1 = Math.hypot(42, 62), total = seg1 + tw, grow = eio(calloutT / .75) * total;
+  let pts = [[ax, ay]];
+  if (grow <= seg1){ const f = grow / seg1; pts.push([ax + (p1[0] - ax) * f, ay + (p1[1] - ay) * f]); }
+  else { pts.push(p1); pts.push([p1[0] + dir * (grow - seg1), p1[1]]); }
+  cPoly.setAttribute('points', pts.map(p => p.join(',')).join(' '));
+  cRing.setAttribute('cx', ax); cRing.setAttribute('cy', ay); cPip.setAttribute('cx', ax); cPip.setAttribute('cy', ay);
+  cText.setAttribute('x', dir > 0 ? p1[0] + 6 : p2[0] + 6); cText.setAttribute('y', p1[1] - 8);
+  cText.style.opacity = clamp01((calloutT - .45) / .4);
+}
+
+/* ======================================================= 레이아웃 (오른쪽 패널만큼 장면을 왼쪽으로) */
+const PANEL = 436;
+function fitDist(){
+  const vh = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+  const fw = Math.max(300, innerWidth - PANEL - 20) / innerWidth, fh = Math.max(250, innerHeight - 190) / innerHeight;
+  return Math.max(290 / (vh * fh), 330 / (vh * camera.aspect * fw));
+}
+function resize(){
+  renderer.setSize(innerWidth, innerHeight, false);
+  camera.aspect = innerWidth / innerHeight;
+  camera.setViewOffset(innerWidth, innerHeight, PANEL / 2, 10, innerWidth, innerHeight);
+  camera.updateProjectionMatrix();
+  camDistT = camDist = fitDist();
+}
+addEventListener('resize', resize); resize();
+
+/* ======================================================= 루프 */
+const clock = new THREE.Clock();
+renderStep();
+function tick(){
+  const dt = Math.min(clock.getDelta(), .05), time = clock.elapsedTime;
+  const k2 = 1 - Math.exp(-dt * 10);
+  if (playing){
+    cur.u += dt / STEPS[cur.s].dur;
+    if (cur.u >= 1){ if (cur.s < STEPS.length - 1) setPos(cur.s + 1, 0); else { cur.u = 1; playing = false; } }
+  }
+  updateChips();
+  rotY += (rotYT - rotY) * k2; rotX += (rotXT - rotX) * k2; camDist += (camDistT - camDist) * k2;
+  world.rotation.set(rotX, rotY, 0);
+  camera.position.copy(LOOK).addScaledVector(CAM_DIR, camDist); camera.lookAt(LOOK); camera.updateMatrixWorld();
+
+  const {P, L} = apply(cur.s, cur.u, time);
+  showParticles(fxPool, P);
+  world.updateMatrixWorld();
+  showLabels(L);
+
+  if (!dragging){
+    const h = pick();
+    hovered = h ? h.part : null;
+    if (h && h.part !== calloutKey){ hoverLocal.copy(h.point); world.worldToLocal(hoverLocal); }
+  }
+  canvas.classList.toggle('hover', !!hovered);
+  updateCallout(dt);
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(tick);
+}
+tick();
+</script>
+<script>/* kiosk: report activity to the parent program */["pointerdown","keydown","wheel","touchstart"].forEach(e=>addEventListener(e,()=>{try{parent.postMessage("kiosk-activity","*")}catch(_){}},{passive:true}));</script>
+</body>
+</html>

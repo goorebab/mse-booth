@@ -1,0 +1,765 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PEMFC 셀 탐색기</title>
+<style>
+  :root{
+    --bg1:#fbfbfc; --bg2:#e4e8ee; --ink:#262a33; --ink2:#5d6370; --line:#d6dbe3;
+    --panel:rgba(255,255,255,.95); --accent:#5aa832; --cath:#d0452f; --anode:#2f3440;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;font-family:"Malgun Gothic","Segoe UI",sans-serif;color:var(--ink);
+    background:radial-gradient(ellipse at 50% 40%,var(--bg1) 0%,var(--bg2) 100%)}
+  #gl{position:fixed;inset:0;width:100vw;height:100vh;display:block;cursor:grab;touch-action:none}
+  html{touch-action:manipulation;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+  #gl.hover{cursor:pointer} #gl.drag{cursor:grabbing}
+  header{position:fixed;left:26px;top:20px;pointer-events:none}
+  header h1{margin:0;font:700 26px "Segoe UI","Malgun Gothic",sans-serif;letter-spacing:-.3px}
+  header p{margin:4px 0 0;color:var(--ink2);font-size:14px}
+  #tools{position:fixed;right:18px;top:18px;display:flex;gap:8px;z-index:3}
+  button.tb{font:inherit;font-size:13.5px;padding:8px 14px;border-radius:10px;border:1px solid var(--line);
+    background:#fff;color:var(--ink);cursor:pointer;box-shadow:0 2px 8px rgba(30,40,60,.06)}
+  button.tb:hover{background:#f2f5f9}
+  #hint{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);font-size:12.5px;color:var(--ink2);
+    background:rgba(255,255,255,.78);padding:6px 14px;border-radius:20px;border:1px solid var(--line);white-space:nowrap}
+  /* 호버 콜아웃 */
+  #callout{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:2}
+  #callout polyline{fill:none;stroke:#3a3d44;stroke-width:1.8;stroke-linejoin:round;filter:drop-shadow(0 0 1.5px #fff) drop-shadow(0 0 1.5px #fff)}
+  #callout .ring{fill:#fff;stroke:#3a3d44;stroke-width:2}
+  #callout .pip{fill:#3a3d44}
+  #callout text{font:italic 700 19px "Segoe UI","Malgun Gothic",sans-serif;fill:#3a3d44;letter-spacing:.5px;paint-order:stroke;stroke:#fff;stroke-width:5px;stroke-linejoin:round}
+  #callout text .en{font:italic 400 13px "Segoe UI",sans-serif;fill:#7a7f8a;letter-spacing:.3px}
+  /* 작동 라벨 */
+  .opl{position:fixed;pointer-events:none;transform:translate(-50%,-50%);font:700 14px "Segoe UI","Malgun Gothic",sans-serif;
+    padding:3px 9px;border-radius:14px;background:rgba(255,255,255,.88);border:1px solid var(--line);white-space:nowrap;opacity:0}
+  #opbanner{position:fixed;left:26px;top:84px;font-size:14px;color:#2f6a24;background:#eef7e6;border:1px solid #cfe5bd;
+    padding:7px 12px;border-radius:10px;opacity:0;transition:opacity .4s;pointer-events:none;line-height:1.55}
+  /* 정보 패널 */
+  #info{position:fixed;top:70px;right:18px;bottom:18px;width:400px;overflow:auto;padding:22px 24px 20px;z-index:3;
+    background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:0 10px 40px rgba(30,40,60,.14);
+    transform:translateX(440px);opacity:0;transition:transform .45s cubic-bezier(.2,.8,.2,1),opacity .3s}
+  #info.on{transform:none;opacity:1}
+  #info .top{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink2)}
+  .tag{padding:3px 9px;border-radius:20px;font-weight:700;font-size:11.5px;color:#fff}
+  .tag.cathode{background:var(--cath)} .tag.anode{background:var(--anode)} .tag.center{background:#b49a3c} .tag.mea{background:var(--accent)}
+  #info .x{margin-left:auto;border:0;background:#eef1f5;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:16px;color:var(--ink2)}
+  #info h2{margin:12px 0 2px;font-size:25px;letter-spacing:-.4px}
+  #info .en{font-family:"Segoe UI",sans-serif;color:var(--ink2);font-size:14px}
+  #info .sum{margin:14px 0 12px;font-size:16px;line-height:1.6;font-weight:600}
+  .cap{padding:10px 13px;font-size:13.5px;color:#2f6a24;background:#eef7e6;border:1px solid #cfe5bd;border-radius:10px;line-height:1.55}
+  .rx{margin:12px 0 4px;padding:11px 14px;border-radius:10px;background:#fff7e3;border:1px solid #f1dc9c;
+    font:600 17px "Segoe UI",sans-serif;text-align:center}
+  #info h4{margin:16px 0 6px;font-size:13px;color:var(--ink2);letter-spacing:.3px}
+  #info ul{margin:0;padding-left:18px;line-height:1.7;font-size:14.5px}
+  #info p.mat{margin:0;font-size:14.5px;line-height:1.6}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12.5px;color:var(--ink2);margin-top:8px}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .legend i{width:12px;height:12px;border-radius:50%;display:inline-block;border:1px solid rgba(0,0,0,.25)}
+  .nav{display:flex;gap:8px;margin-top:18px}
+  .nav button{flex:1}
+  .mini{display:flex;gap:2px;align-items:flex-end;height:34px;margin:8px 0 2px}
+  .mini i{flex:1;border-radius:2px;cursor:pointer;opacity:.45}
+  .mini i.on{opacity:1;outline:2px solid var(--ink);outline-offset:1px}
+  .minicap{display:flex;justify-content:space-between;font-size:11px;color:var(--ink2)}
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<header>
+  <h1>PEMFC 단위셀 구조 탐색기</h1>
+  <p>부품에 마우스를 올리면 이름이, 클릭하면 확대되어 역할을 보여줍니다</p>
+</header>
+<div id="opbanner">⚡ 작동 중 — H₂와 O₂가 들어가 전기와 물이 만들어집니다</div>
+<div id="tools">
+  <button class="tb" id="btnExplode">분해하기</button>
+  <button class="tb" id="btnReset">시점 초기화</button>
+</div>
+<div id="hint">마우스 올리기: 이름 · 클릭: 확대 + 역할 보기 · Ctrl + ← →: 좌우 회전 · 드래그: 회전 · 휠: 확대/축소 · ← →: 이전/다음 · Space: 분해/조립 · ESC: 돌아가기</div>
+<svg id="callout"><polyline/><circle class="ring" r="6"/><circle class="pip" r="2.4"/><text><tspan class="kr"></tspan><tspan class="en" dx="8"></tspan></text></svg>
+<div id="oplabels"></div>
+<aside id="info"></aside>
+
+<script src="three.min.js"></script>
+<script>
+if(!window.THREE){document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>')}
+</script>
+<script>
+/* ======================================================= 데이터 */
+const INFO = {
+  endplate:{name:'엔드 플레이트', en:'End Plate',
+    summary:'스택 양 끝에서 볼트로 모든 층을 꽉 눌러 고정합니다.',
+    roles:['층을 밀착시켜 접촉저항 ↓','가스·냉각수 누설 방지','가스 입·출구(포트) 제공'],
+    material:'알루미늄, 스테인리스강, 복합재',
+    sides:{cathode:{caption:'포트로 공기(O₂)가 들어가고, 아래 포트로 물이 빠져나옵니다'},
+           anode:{caption:'포트로 수소(H₂)가 스택 안으로 들어갑니다'}}},
+  insul:{name:'절연판', en:'Insulation Plate',
+    summary:'집전판의 전기가 엔드플레이트로 새지 않게 막습니다.',
+    roles:['누설 전류·단락 차단','엔드플레이트를 0 V로 유지 → 감전 방지'],
+    material:'PTFE, 폴리이미드, G10 에폭시',
+    caption:'집전판 쪽에서 오는 전자(e⁻)가 절연판에 막혀 튕겨 나갑니다'},
+  cc:{name:'집전판', en:'Current Collector',
+    roles:['셀의 전류를 한 곳에 모음','탭(단자)으로 외부 회로와 연결'],
+    material:'구리 + 금/니켈 도금',
+    sides:{anode:{summary:'셀에서 나온 전자를 모아 외부 회로로 내보내는 (−) 단자입니다.',
+                  caption:'전자(e⁻)가 판 위를 흘러 탭으로 모이고, 밖으로 나가 LED를 켭니다'},
+           cathode:{summary:'외부 회로를 돌아온 전자를 다시 셀로 넣어 주는 (+) 단자입니다.',
+                    caption:'LED를 지나 돌아온 전자(e⁻)가 탭을 통해 판 전체로 퍼집니다'}}},
+  bp:{name:'분리판', en:'Bipolar Plate',
+    roles:['유로로 가스를 골고루 분배','셀 사이로 전자 전달 (직렬 연결)','수소·공기 분리, 열 제거'],
+    material:'흑연 복합재, 코팅 금속',
+    sides:{cathode:{summary:'유로를 따라 공기(O₂)를 골고루 공급하고, 생긴 물을 빼냅니다.',
+                    caption:'O₂가 유로를 따라 판 전체로 흐르고, 뒤쪽으로 갈수록 물(H₂O)이 섞여 나갑니다'},
+           anode:{summary:'유로를 따라 수소(H₂)를 전극 전체에 골고루 공급합니다.',
+                  caption:'H₂가 지그재그 유로를 따라 판 전체로 흐릅니다'}}},
+  gdl:{name:'기체확산층', en:'Gas Diffusion Layer (GDL)',
+    summary:'유로의 가스를 촉매층 전체로 고르게 퍼뜨리는 다공성 탄소 시트입니다.',
+    roles:['가스 확산 (리브 아래까지)','전자 전달','물 관리 (배수·보습)'],
+    material:'탄소섬유 페이퍼 + PTFE 발수처리',
+    sides:{cathode:{caption:'유로 줄기로 들어온 O₂가 시트 안에서 넓게 퍼져 반대편 전체로 나가고, 물은 거꾸로 빠집니다'},
+           anode:{caption:'유로 줄기로 들어온 H₂가 시트 안에서 넓게 퍼져 촉매층 전체로 전달됩니다'}}},
+  cl:{name:'촉매층', en:'Catalyst Layer',
+    sides:{cathode:{name:'공기극 촉매층', en:'Cathode Catalyst Layer',
+        summary:'산소 + 수소이온 + 전자가 만나 물이 만들어지는 곳입니다.',
+        reaction:'½O₂ + 2H⁺ + 2e⁻ → H₂O',
+        roles:['백금(Pt) 촉매에서 반응','반응이 느려 백금이 더 많이 필요'],
+        material:'Pt/C 촉매 + 이오노머',
+        caption:'앞쪽에서 O₂·e⁻, 뒤(막)에서 H⁺가 와서 반짝! → H₂O가 생겨 나갑니다'},
+      anode:{name:'연료극 촉매층', en:'Anode Catalyst Layer',
+        summary:'수소가 수소이온(H⁺)과 전자(e⁻)로 쪼개지는 곳입니다.',
+        reaction:'H₂ → 2H⁺ + 2e⁻',
+        roles:['백금(Pt) 촉매에서 반응','H⁺는 막으로, e⁻는 외부 회로로'],
+        material:'Pt/C 촉매 + 이오노머',
+        caption:'뒤쪽에서 온 H₂가 반짝! 쪼개져 H⁺는 앞(막)으로, e⁻는 뒤로 나갑니다'}}},
+  mem:{name:'전해질막', en:'Proton Exchange Membrane',
+    summary:'수소이온(H⁺)만 통과시키고, 전자와 가스는 막습니다.',
+    roles:['H⁺ 전달: 연료극 → 공기극','전자 차단 → 전자는 외부로 돌아 전기 생성','물을 머금어야 H⁺가 잘 이동'],
+    material:'Nafion® (과불소술폰산 고분자)',
+    caption:'H⁺는 막을 뚫고 지나가고, e⁻ · H₂ · O₂는 막에 부딪혀 튕겨 나갑니다 (✕)'}
+};
+const SIDE_TXT = {cathode:'공기극 (Cathode) 측', anode:'연료극 (Anode) 측', center:'셀 중심'};
+const COMPS = [
+  {key:'endplate',side:'cathode',t:24,size:196,edge:0x96989e,sw:'#a9acb2'},
+  {key:'insul',side:'cathode',t:6,size:184,edge:0xc8c8c4,sw:'#d6d6d2'},
+  {key:'cc',side:'cathode',t:6,size:184,edge:0xbe6e32,sw:'#d98a46'},
+  {key:'bp',side:'cathode',t:13,size:176,edge:0x46484e,sw:'#3caaeb'},
+  {key:'gdl',side:'cathode',t:4,size:160,edge:0x46484c,sw:'#5e6064',mea:true},
+  {key:'cl',side:'cathode',t:3,size:148,edge:0x1e1e20,sw:'#1e1e20',mea:true},
+  {key:'mem',side:'center',t:3,size:172,edge:0xe1decd,sw:'#f2e4a8',mea:true},
+  {key:'cl',side:'anode',t:3,size:148,edge:0x1e1e20,sw:'#1e1e20',mea:true},
+  {key:'gdl',side:'anode',t:4,size:160,edge:0x46484c,sw:'#5e6064',mea:true},
+  {key:'bp',side:'anode',t:13,size:176,edge:0x46484e,sw:'#6ec837'},
+  {key:'cc',side:'anode',t:6,size:184,edge:0xbe6e32,sw:'#d98a46'},
+  {key:'insul',side:'anode',t:6,size:184,edge:0xc8c8c4,sw:'#d6d6d2'},
+  {key:'endplate',side:'anode',t:24,size:196,edge:0x96989e,sw:'#a9acb2'},
+];
+const THROUGH = {mem:1, cl:1, gdl:1, insul:1};   // 확대 시 반투명 → 관통 움직임이 보이게
+function infoFor(c){
+  const b = INFO[c.key], s = (b.sides && b.sides[c.side]) || {}, r = {};
+  for (const k of ['name','en','summary','roles','material','reaction','caption']) r[k] = s[k] || b[k];
+  return r;
+}
+
+/* ======================================================= 유틸 */
+const clamp01 = u => Math.max(0, Math.min(1, u));
+const eio = u => 0.5 - 0.5 * Math.cos(Math.PI * clamp01(u));
+const ramp = (u, a = .1, b = .1) => clamp01(u / a) * clamp01((1 - u) / b);
+function seeded(seed){ let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
+const RN = (() => { const r = seeded(42); return Array.from({length: 512}, () => r()); })();
+const rr = (k, j) => RN[(k * 37 + j * 11) % 512];
+function along(p, u){
+  const L = []; let tot = 0;
+  for (let i = 0; i < p.length - 1; i++){ let d = 0; for (let a = 0; a < p[i].length; a++) d += (p[i+1][a]-p[i][a]) ** 2; d = Math.sqrt(d); L.push(d); tot += d; }
+  let d = tot * clamp01(u);
+  for (let i = 0; i < L.length; i++){
+    if (d <= L[i] || i === L.length - 1){ const f = L[i] ? Math.min(1, d / L[i]) : 0; return p[i].map((v, a) => v + (p[i+1][a] - v) * f); }
+    d -= L[i];
+  }
+}
+
+/* ======================================================= 텍스처 */
+const TS = 512;
+function cv(draw){const c=document.createElement('canvas');c.width=c.height=TS;const g=c.getContext('2d');draw(g,TS);
+  const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=8;return t}
+function metal(g,w,c1,c2,streak,seed){
+  const gr=g.createLinearGradient(0,0,w,w*0.7);gr.addColorStop(0,c1);gr.addColorStop(1,c2);g.fillStyle=gr;g.fillRect(0,0,w,w);
+  const r=seeded(seed||1);for(let x=0;x<w;x++){const a=(r()-0.5)*streak;g.fillStyle=a>0?`rgba(255,255,255,${a})`:`rgba(0,0,0,${-a})`;g.fillRect(x,0,1,w)}
+}
+const BP_M = 60, BP_N = 8;
+function bpPath2D(side){        // 분리판 서펜타인 유로 (텍스처 픽셀 좌표)
+  const w = TS, m = BP_M, n = BP_N, vert = side === 'cathode', pts = [];
+  for (let i = 0; i < n; i++){ const f = m + (w - 2*m) * (i + .5) / n, a = (i % 2) ? w - m : m, b = (i % 2) ? m : w - m;
+    pts.push(vert ? [f, a] : [a, f]); pts.push(vert ? [f, b] : [b, f]); }
+  return pts;
+}
+const TEX = {
+  endplate:()=>cv((g,w)=>{metal(g,w,'#d2d4d8','#5f6268',0.12,1);
+    g.strokeStyle='#46484e';g.lineWidth=8;g.strokeRect(4,4,w-8,w-8);
+    g.strokeStyle='rgba(235,237,240,.9)';g.lineWidth=4;g.strokeRect(26,26,w-52,w-52);
+    for(const [x,y] of [[60,60],[w-60,60],[60,w-60],[w-60,w-60]]){
+      g.fillStyle='#3c3e44';g.beginPath();g.arc(x,y,22,0,7);g.fill();g.strokeStyle='#dcdee2';g.lineWidth=4;g.stroke();
+      g.fillStyle='#96989e';g.beginPath();g.arc(x,y,10,0,7);g.fill();}}),
+  insul:()=>cv((g,w)=>{const gr=g.createLinearGradient(0,0,0,w);gr.addColorStop(0,'#e0e0dc');gr.addColorStop(1,'#acaca8');
+    g.fillStyle=gr;g.fillRect(0,0,w,w);g.strokeStyle='#82827e';g.lineWidth=6;g.strokeRect(3,3,w-6,w-6)}),
+  cc:()=>cv((g,w)=>{metal(g,w,'#eea25a','#964f22',0.16,3);g.strokeStyle='#6e3a19';g.lineWidth=6;g.strokeRect(3,3,w-6,w-6)}),
+  bp:(side)=>cv((g,w)=>{metal(g,w,'#5a5c62','#26282c',0.08,5);
+    g.strokeStyle='rgba(120,122,128,.55)';g.lineWidth=2;for(let k=-w;k<w;k+=16){g.beginPath();g.moveTo(k,0);g.lineTo(k+w,w);g.stroke()}
+    const m=BP_M;g.strokeStyle='#141416';g.lineWidth=7;g.strokeRect(m-12,m-12,w-2*m+24,w-2*m+24);
+    g.strokeStyle=side==='cathode'?'#3caaeb':'#6ec837';g.lineWidth=9;g.lineJoin='round';g.beginPath();
+    bpPath2D(side).forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.stroke();
+    g.fillStyle='#0c0c0e';for(const [x,y] of [[30,30],[w-30,w-30]]){g.beginPath();g.arc(x,y,16,0,7);g.fill()}}),
+  gdl:()=>cv((g,w)=>{const gr=g.createLinearGradient(0,0,0,w);gr.addColorStop(0,'#5e6064');gr.addColorStop(1,'#3a3c40');
+    g.fillStyle=gr;g.fillRect(0,0,w,w);const r=seeded(7);
+    for(let i=0;i<1400;i++){const x=r()*w,y=r()*w,a=r()*Math.PI,L=20+r()*70,c=110+r()*50|0;
+      g.strokeStyle=`rgb(${c},${c},${c+4})`;g.lineWidth=1.4;g.beginPath();g.moveTo(x,y);g.lineTo(x+Math.cos(a)*L,y+Math.sin(a)*L);g.stroke()}
+    g.strokeStyle='#28282c';g.lineWidth=6;g.strokeRect(3,3,w-6,w-6)}),
+  cl:()=>cv((g,w)=>{g.fillStyle='#202022';g.fillRect(0,0,w,w);const r=seeded(11);
+    for(let i=0;i<9000;i++){const c=20+r()*40|0;g.fillStyle=`rgb(${c},${c},${c})`;g.fillRect(r()*w,r()*w,3,3)}
+    for(let i=0;i<1400;i++){g.fillStyle=`rgba(190,190,200,${.4+r()*.5})`;g.beginPath();g.arc(r()*w,r()*w,1+r()*2,0,7);g.fill()}
+    g.strokeStyle='#0a0a0b';g.lineWidth=6;g.strokeRect(3,3,w-6,w-6)}),
+  mem:()=>cv((g,w)=>{g.fillStyle='#eceef0';g.fillRect(0,0,w,w);g.strokeStyle='#9fa2a8';g.lineWidth=6;g.strokeRect(3,3,w-6,w-6);
+    const m=46,gr=g.createLinearGradient(0,m,0,w-m);gr.addColorStop(0,'#fcf6d2');gr.addColorStop(1,'#e6d592');
+    g.fillStyle=gr;g.fillRect(m,m,w-2*m,w-2*m);g.strokeStyle='#bea86a';g.lineWidth=5;g.strokeRect(m,m,w-2*m,w-2*m);
+    g.strokeStyle='rgba(255,255,245,.8)';g.lineWidth=3;for(let k=0;k<4;k++){g.beginPath();g.moveTo(m+150+k*7,w-m);g.lineTo(w-m,m+150+k*7);g.stroke()}}),
+};
+
+/* ======================================================= 입자 아이콘 */
+function iconTex(draw){ const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  g.translate(64, 64); draw(g); const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return t; }
+function ci(g, x, y, r, f, s){ g.beginPath(); g.arc(x, y, r, 0, 7); g.fillStyle = f; g.fill(); if (s){ g.lineWidth = 3; g.strokeStyle = s; g.stroke(); } }
+function ct(g, s, size){ g.font = `700 ${size}px "Segoe UI",sans-serif`; g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(s, 0, 2); }
+function radial(g, stops){ const gr = g.createRadialGradient(0, 0, 0, 0, 0, 64); stops.forEach(([o, c]) => gr.addColorStop(o, c)); g.fillStyle = gr; g.fillRect(-64, -64, 128, 128); }
+const ICON = {
+  h2: iconTex(g => { ci(g, -15, 0, 19, '#6ec837', '#3c821e'); ci(g, 15, 0, 19, '#6ec837', '#3c821e'); }),
+  o2: iconTex(g => { ci(g, -17, 0, 21, '#3caaeb', '#1e6eaa'); ci(g, 17, 0, 21, '#3caaeb', '#1e6eaa'); }),
+  hp: iconTex(g => { ci(g, 0, 0, 30, '#f5af14', '#be780a'); ct(g, '+', 46); }),
+  el: iconTex(g => { ci(g, 0, 0, 28, '#4669e6', '#1e3296'); ct(g, '−', 44); }),
+  h2o: iconTex(g => { ci(g, -24, -16, 14, '#fff', '#7896be'); ci(g, 24, -16, 14, '#fff', '#7896be'); ci(g, 0, 6, 26, '#78b9f0', '#3278be'); }),
+  drop: iconTex(g => { g.fillStyle = '#6fb4ee'; g.beginPath(); g.moveTo(0, -40); g.quadraticCurveTo(26, 0, 22, 14);
+                       g.arc(0, 14, 22, 0, Math.PI); g.quadraticCurveTo(-26, 0, 0, -40); g.fill(); ci(g, -7, 10, 6, 'rgba(255,255,255,.7)'); }),
+  flash: iconTex(g => radial(g, [[0, 'rgba(255,250,210,1)'], [.25, 'rgba(255,225,110,.85)'], [1, 'rgba(255,200,60,0)']])),
+  glow: iconTex(g => radial(g, [[0, 'rgba(255,245,190,1)'], [.3, 'rgba(255,200,80,.6)'], [1, 'rgba(255,170,40,0)']])),
+  x: iconTex(g => { g.strokeStyle = '#e0372b'; g.lineWidth = 16; g.lineCap = 'round'; g.beginPath();
+                    g.moveTo(-30, -30); g.lineTo(30, 30); g.moveTo(30, -30); g.lineTo(-30, 30); g.stroke(); }),
+};
+const SZ = {h2: 24, o2: 26, hp: 15, el: 14, h2o: 22, drop: 13, flash: 60, glow: 120, x: 16};
+const ADD = {};
+function makePool(n, parent){
+  const a = [];
+  for (let i = 0; i < n; i++){
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({map: ICON.h2, transparent: true, depthWrite: false}));
+    s.visible = false; s.raycast = () => {}; s.renderOrder = 20; parent.add(s); a.push(s);
+  }
+  return a;
+}
+function showParticles(pool, list, alpha = 1){
+  let i = 0;
+  for (const q of list){
+    if (i >= pool.length) break;
+    const a = q.a * alpha; if (a < 0.02) continue;
+    const s = pool[i++]; s.visible = true;
+    s.material.map = ICON[q.k]; s.material.opacity = a;
+    s.material.blending = ADD[q.k] ? THREE.AdditiveBlending : THREE.NormalBlending;
+    s.position.set(q.p[0], q.p[1], q.p[2]);
+    const sc = SZ[q.k] * (q.s || 1); s.scale.set(sc, sc, 1);
+  }
+  for (; i < pool.length; i++) pool[i].visible = false;
+}
+
+/* ======================================================= 부품별 역할 애니메이션 (부품 로컬 좌표: x=두께방향, y=위, z=오른쪽) */
+function spot(c, k, j, f = .34){ return [(rr(k, j) - .5) * 2 * f * c.size, (rr(k, j + 1) - .5) * 2 * f * c.size]; }
+function bounce(out, k, c, t, sgn, T, ph, j){
+  const th = c.t / 2, u = (t / T + ph) % 1, [y, z] = spot(c, j, 3, .3);
+  const f = u < .5 ? eio(u / .5) : 1 - eio((u - .5) / .5), x = sgn * (100 - (100 - th - 8) * f);
+  out.push({k, p: [x, y, z], a: ramp(u, .08, .08)});
+  out.push({k: 'x', p: [sgn * (th + 3), y, z], a: Math.max(0, 1 - Math.abs(u - .5) * 6)});
+}
+const FX = {
+  mem(c, t, out){
+    const th = c.t / 2;
+    for (let k = 0; k < 12; k++){ const u = (t / 3 + k / 12) % 1, [y, z] = spot(c, k, 0);
+      out.push({k: 'hp', p: along([[95, y, z], [th, y, z], [-th, y + 5, z - 4], [-95, y + 10, z - 10]], u), a: ramp(u, .08, .1)}); }
+    for (let k = 0; k < 3; k++) bounce(out, 'o2', c, t, -1, 2.6, k / 3, 20 + k);
+    for (let k = 0; k < 3; k++) bounce(out, 'el', c, t, 1, 2.2, k / 3 + .15, 30 + k);
+    for (let k = 0; k < 2; k++) bounce(out, 'h2', c, t, 1, 2.8, k / 2 + .3, 40 + k);
+  },
+  cl(c, t, out){
+    const th = c.t / 2, cat = c.side === 'cathode', gS = cat ? -1 : 1, mS = -gS;
+    for (let i = 0; i < 6; i++){
+      const u = (t / 3.4 + i / 6) % 1, [y, z] = spot(c, i, 5, .3), inn = d => d * (95 - (95 - th) * eio(u / .42));
+      out.push({k: 'flash', p: [0, y, z], a: u > .36 && u < .6 ? Math.sin((u - .36) / .24 * Math.PI) : 0});
+      if (cat){
+        if (u < .42){ out.push({k: 'o2', p: [inn(gS), y, z], a: ramp(u, .08, 0) || 1});
+          out.push({k: 'hp', p: [inn(mS), y - 9, z], a: 1}); out.push({k: 'hp', p: [inn(mS), y + 9, z], a: 1});
+          out.push({k: 'el', p: [inn(gS), y + 16, z - 9], a: 1}); out.push({k: 'el', p: [inn(gS), y + 16, z + 9], a: 1}); }
+        if (u >= .5){ const f = eio((u - .5) / .5); out.push({k: 'h2o', p: [gS * (th + 90 * f), y, z + 14 * f], a: ramp(u - .5, .06, .1)}); }
+      } else {
+        if (u < .42) out.push({k: 'h2', p: [inn(gS), y, z], a: ramp(u, .08, 0) || 1});
+        if (u >= .5){ const f = eio((u - .5) / .5), a = ramp(u - .5, .06, .1);
+          out.push({k: 'hp', p: [mS * (th + 90 * f), y - 9, z], a}); out.push({k: 'hp', p: [mS * (th + 90 * f), y + 9, z], a});
+          out.push({k: 'el', p: [gS * (th + 90 * f), y - 16 - 10 * f, z], a}); out.push({k: 'el', p: [gS * (th + 90 * f), y + 16 + 10 * f, z], a}); }
+      }
+    }
+  },
+  gdl(c, t, out){
+    const th = c.t / 2, cat = c.side === 'cathode', bS = cat ? -1 : 1, S = c.size;
+    const gas = cat ? 'o2' : 'h2';
+    for (let k = 0; k < 16; k++){
+      const u = (t / 3.6 + k / 16) % 1, zc = [-.25, 0, .25][k % 3] * S, y0 = (rr(k, 1) - .5) * .5 * S, [yt, zt] = spot(c, k, 3, .4);
+      const p = [[bS * 95, y0, zc], [bS * th, y0, zc], [0, (y0 + yt) / 2, (zc + zt) / 2], [-bS * th, yt, zt], [-bS * 50, yt, zt]];
+      out.push({k: gas, p: along(p, u), a: .9 * ramp(u, .06, .1)});
+    }
+    if (cat) for (let k = 0; k < 5; k++){
+      const u = (t / 4.4 + k / 5) % 1, zc = [-.25, 0, .25][k % 3] * S, [yt, zt] = spot(c, k + 50, 3, .35);
+      out.push({k: 'h2o', p: along([[-bS * 50, yt, zt], [-bS * th, yt, zt], [0, yt * .6, (zt + zc) / 2], [bS * th, yt * .4, zc], [bS * 95, yt * .4, zc]], u), a: .9 * ramp(u, .1, .08)});
+    }
+  },
+  bp(c, t, out){
+    const S = c.size, x = -c.t / 2 - 2, cat = c.side === 'cathode';
+    const p2 = bpPath2D(c.side), first = p2[0], last = p2[p2.length - 1];
+    const pre = cat ? [first[0], -30] : [-30, first[1]], post = cat ? [last[0], TS + 30] : [TS + 30, last[1]];
+    const p = [pre, ...p2, post].map(([u, v]) => [x, S / 2 - v / TS * S, u / TS * S - S / 2]);
+    const N = 30;
+    for (let k = 0; k < N; k++){ const u = (t / 10 + k / N) % 1, a = ramp(u, .02, .03);
+      if (cat && k % 3 === 0 && u > .45) out.push({k: 'h2o', p: along(p, u), a: .9 * a, s: .75});
+      else out.push({k: cat ? 'o2' : 'h2', p: along(p, u), a, s: .75 - .2 * u}); }
+  },
+  cc(c, t, out){
+    const S = c.size, h = S / 2, x = -c.t / 2 - 2, tz = (c.side === 'cathode' ? -.32 : .36) * S, an = c.side === 'anode';
+    const ly = h + 92;
+    for (let k = 0; k < 16; k++){
+      let u = (t / 3.2 + k / 16) % 1; if (!an) u = 1 - u;
+      const [y, z] = spot(c, k, 7, .42);
+      out.push({k: 'el', p: along([[x, y, z], [x, h - 8, tz], [0, h + 26, tz], [0, ly - 14, tz]], u), a: ramp(u, .08, .08)});
+    }
+    const pulse = .8 + .2 * Math.sin(t * 9) * Math.sin(t * 2.3);
+    out.push({k: 'glow', p: [0, ly, tz], a: pulse, s: .8}); out.push({k: 'flash', p: [0, ly, tz], a: 1, s: .5});
+  },
+  insul(c, t, out){
+    const ccS = c.side === 'cathode' ? 1 : -1;
+    for (let k = 0; k < 6; k++) bounce(out, 'el', c, t, ccS, 2.2, k / 6, 60 + k);
+  },
+  endplate(c, t, out){
+    const th = c.t / 2, cat = c.side === 'cathode', s = cat ? -1 : 1, S = c.size;
+    const yT = .34 * S, zT = -.26 * S, yB = -.34 * S, zB = .26 * S;
+    for (let k = 0; k < 6; k++){ const u = (t / 2.6 + k / 6) % 1;
+      out.push({k: cat ? 'o2' : 'h2', p: along([[s * (th + 150), yT, zT], [s * (th + 26), yT, zT], [-s * th, yT, zT]], u), a: ramp(u, .1, .15)}); }
+    if (cat) for (let k = 0; k < 4; k++){ const u = (t / 2.4 + k / 4) % 1;
+      out.push({k: 'drop', p: along([[s * th, yB, zB], [s * (th + 30), yB, zB], [s * (th + 44), yB - 18, zB], [s * (th + 50), yB - 90, zB]], u), a: ramp(u, .1, .15)}); }
+  },
+};
+
+/* ======================================================= 씬 */
+const canvas = document.getElementById('gl');
+const renderer = new THREE.WebGLRenderer({canvas, antialias: true, alpha: true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputEncoding = THREE.sRGBEncoding;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(22, 1, 10, 30000);
+const CAM_DIR = new THREE.Vector3(-0.62, 0.40, 0.68).normalize();
+const CAM_H = Math.hypot(CAM_DIR.x, CAM_DIR.z), CAM_EL = Math.atan2(CAM_DIR.y, CAM_H), camDir = new THREE.Vector3();
+let camDist = 2000, camDistT = 2000;
+const LOOK = new THREE.Vector3(0, 10, 0);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8a90a0, 0.85));
+const sun = new THREE.DirectionalLight(0xffffff, 0.75); sun.position.set(-500, 900, 700); scene.add(sun);
+const fill = new THREE.DirectionalLight(0xffffff, 0.25); fill.position.set(600, 200, -300); scene.add(fill);
+
+const stack = new THREE.Group(); scene.add(stack);
+const shTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d');
+  const gr = g.createRadialGradient(128, 128, 10, 128, 128, 128); gr.addColorStop(0, 'rgba(60,70,90,.35)'); gr.addColorStop(1, 'rgba(60,70,90,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 256, 256); return new THREE.CanvasTexture(c); })();
+const shadow = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({map: shTex, transparent: true, depthWrite: false}));
+shadow.rotation.x = -Math.PI / 2; shadow.position.y = -112; shadow.raycast = () => {}; stack.add(shadow);
+
+const GAP = 56, GAP2 = 40;
+const items = [];
+let acc = 0, gm = 0, gs = 0;
+COMPS.forEach((c, i) => {
+  if (i > 0){ if (c.mea && COMPS[i-1].mea) gs++; else gm++; }
+  c.asm = acc + c.t / 2; acc += c.t; c.gm = gm; c.gs = gs;
+  const face = new THREE.MeshStandardMaterial({map: TEX[c.key](c.side), roughness: .55, metalness: c.key === 'endplate' || c.key === 'cc' ? .25 : .05});
+  const side = new THREE.MeshStandardMaterial({color: c.edge, roughness: .6, metalness: .1});
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(c.t, c.size, c.size), [face, face, side, side, side, side]);
+  const pivot = new THREE.Group(); pivot.add(mesh);
+  const extra = [];
+  if (c.key === 'cc'){
+    const m = new THREE.MeshStandardMaterial({color: 0xd98a46, roughness: .45, metalness: .3}); extra.push(m);
+    const tab = new THREE.Mesh(new THREE.BoxGeometry(c.t, 26, 18), m);
+    tab.position.set(0, c.size / 2 + 13, (c.side === 'cathode' ? -.32 : .36) * c.size); pivot.add(tab);
+  }
+  if (c.key === 'endplate'){
+    const m = new THREE.MeshStandardMaterial({color: 0xb4b6bc, roughness: .35, metalness: .5}); extra.push(m);
+    const sg = c.side === 'cathode' ? -1 : 1;
+    for (const [y, z] of [[.34, -.26], [-.34, .26]]){
+      const cyl = new THREE.Mesh(new THREE.CylinderGeometry(7, 7, 26, 20), m);
+      cyl.rotation.z = Math.PI / 2; cyl.position.set(sg * (c.t / 2 + 13), y * c.size, z * c.size); pivot.add(cyl);
+    }
+  }
+  pivot.traverse(o => o.userData.idx = i);
+  stack.add(pivot);
+  items.push({c, pivot, mats: [face, side, ...extra], hov: 0, op: 1});
+});
+const STACK_LEN = acc;
+function baseX(i, ee){
+  const c = COMPS[i], last = COMPS[COMPS.length - 1];
+  const shift = (STACK_LEN + GAP * last.gm * ee + GAP2 * last.gs * ee) / 2;
+  return c.asm + GAP * c.gm * ee + GAP2 * c.gs * ee - shift;
+}
+
+// 선택 부품용 입자
+const fxGroup = new THREE.Group();
+const fxPool = makePool(110, fxGroup);
+
+/* ======================================================= 작동 연출 (조립 상태 / 분해 상태 공통) */
+const TABZ = i => (COMPS[i].side === 'cathode' ? -.32 : .36) * COMPS[i].size;
+const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
+function tube(group, pts, color){
+  const path = new THREE.CurvePath(); for (let i = 0; i < pts.length - 1; i++) path.add(new THREE.LineCurve3(pts[i], pts[i+1]));
+  const m = new THREE.MeshStandardMaterial({color, roughness: .5, transparent: true});
+  const mesh = new THREE.Mesh(new THREE.TubeGeometry(path, 80, 1.8, 8, false), m); mesh.raycast = () => {}; group.add(mesh); return m;
+}
+function makeOp(ee){
+  const g = new THREE.Group(); stack.add(g); g.visible = false;
+  const X = i => baseX(i, ee);
+  const TA = V3(X(10), COMPS[10].size / 2 + 26, TABZ(10)), TC = V3(X(2), COMPS[2].size / 2 + 26, TABZ(2));
+  const WY = ee ? 235 : 215, mid = (TA.x + TC.x) / 2, LED = V3(mid, WY + 6, 4);
+  const wireA = [TA, V3(TA.x, WY, TA.z), V3(mid + 9, WY, 4)], wireC = [V3(mid - 9, WY, 4), V3(TC.x, WY, TC.z), TC];
+  const mats = [tube(g, wireA, 0x2a2d34), tube(g, wireC, 0xd0452f)];
+  const ledMat = new THREE.MeshStandardMaterial({color: 0xffd25a, emissive: 0xffb020, emissiveIntensity: 1, transparent: true, roughness: .3});
+  const body = new THREE.Mesh(new THREE.SphereGeometry(9, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2), ledMat);
+  body.position.copy(LED); body.raycast = () => {}; g.add(body);
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(10.5, 10.5, 5, 24), ledMat);
+  base.position.set(LED.x, LED.y - 2, LED.z); base.raycast = () => {}; g.add(base);
+  mats.push(ledMat);
+  if (ee){   // 전자 경로 점선 (연료극 촉매층 → 집전판 → 탭 / 탭 → 집전판 → 공기극 촉매층)
+    const dotMat = new THREE.MeshBasicMaterial({color: 0x3f63e8, transparent: true, depthTest: false});
+    const geo = new THREE.SphereGeometry(2.6, 8, 6);
+    const paths = [[[X(7), 0, 0], [X(10), 0, 0], [X(10), 70, TABZ(10)], [TA.x, TA.y, TA.z]],
+                   [[TC.x, TC.y, TC.z], [X(2), 70, TABZ(2)], [X(2), 0, 0], [X(5), 0, 0]]];
+    for (const pp of paths){
+      let L = 0; for (let i = 0; i < pp.length - 1; i++) L += Math.hypot(pp[i+1][0]-pp[i][0], pp[i+1][1]-pp[i][1], pp[i+1][2]-pp[i][2]);
+      for (let d = 0; d <= L; d += 7){ const q = along(pp, d / L), m = new THREE.Mesh(geo, dotMat);
+        m.position.set(q[0], q[1], q[2]); m.raycast = () => {}; m.renderOrder = 30; g.add(m); }
+    }
+    mats.push(dotMat);
+  }
+  const op = {ee, g, X, mats, ledMat, LED, TA, TC, WY, a: 0, start: 0,
+              pool: makePool(ee ? 170 : 70, g), EP: [...wireA, ...wireC].map(v => [v.x, v.y, v.z])};
+  const lbl = (html, p, power) => ({html, p, power});
+  if (!ee){
+    const e0 = COMPS[0], e12 = COMPS[12];
+    op.PIN_C = [X(0) - e0.t / 2, .34 * e0.size, -.26 * e0.size];
+    op.POUT_C = [X(0) - e0.t / 2, -.34 * e0.size, .26 * e0.size];
+    op.PIN_A = [X(12) + e12.t / 2, .34 * e12.size, -.26 * e12.size];
+    op.labels = [
+      lbl('<span style="color:#2f8fd0">O₂</span> 공기 주입', [op.PIN_C[0] - 175, op.PIN_C[1] + 22, op.PIN_C[2]]),
+      lbl('<span style="color:#4aa020">H₂</span> 수소 주입', [op.PIN_A[0] + 175, op.PIN_A[1] + 22, op.PIN_A[2]]),
+      lbl('<span style="color:#2f8fd0">H₂O</span> 물 배출', [op.POUT_C[0] - 70, op.POUT_C[1] - 135, op.POUT_C[2]], 1),
+      lbl('💡 LED', [LED.x, LED.y + 48, LED.z], 1),
+      lbl('<span style="color:#d0452f">(+)</span> 공기극', [TC.x - 40, TC.y + 10, TC.z - 30]),
+      lbl('<span style="color:#30343c">(−)</span> 연료극', [TA.x + 40, TA.y + 10, TA.z + 30]),
+      lbl('<span style="color:#4669e6">e⁻</span> 흐름 →', [TA.x * .5, WY + 26, (TA.z + 4) / 2], 1)];
+  } else {
+    op.labels = [
+      lbl('<span style="color:#2f8fd0">O₂</span> 공기 공급', [X(3), 178, 0]),
+      lbl('<span style="color:#4aa020">H₂</span> 수소 공급', [X(9), 178, 0]),
+      lbl('① <span style="color:#4aa020">H₂</span> → 2H⁺ + 2e⁻', [X(7) + 10, -118, 40], 1),
+      lbl('② <span style="color:#d8960a">H⁺</span> 막 통과', [X(6), -150, 0], 1),
+      lbl('③ <span style="color:#4669e6">e⁻</span> 외부 회로 → 💡', [mid, WY + 46, 4], 1),
+      lbl('④ ½O₂ + 2H⁺ + 2e⁻ → <span style="color:#2f8fd0">H₂O</span>', [X(5) - 30, -182, -40], 1),
+      lbl('<span style="color:#2f8fd0">H₂O</span> 물 배출', [X(3) - 20, -200, 0], 1),
+      lbl('<span style="color:#e0372b">✕</span> <span style="color:#4669e6">e⁻</span> 막 통과 불가 → 외부 회로로 우회', [X(6), 150, 0], 1),
+      lbl('<span style="color:#4669e6">⋯ e⁻ 경로</span>', [X(9) + 30, 40, 90], 1),
+      lbl('<span style="color:#d0452f">(+)</span>', [TC.x - 22, TC.y + 4, TC.z]),
+      lbl('<span style="color:#30343c">(−)</span>', [TA.x + 22, TA.y + 4, TA.z])];
+  }
+  op.labelEls = op.labels.map(d => { const el = document.createElement('div'); el.className = 'opl'; el.innerHTML = d.html;
+    document.getElementById('oplabels').appendChild(el); return el; });
+  return op;
+}
+const OPS = [makeOp(0), makeOp(1)];
+
+function ledParticles(op, out, t, power){
+  const fl = .72 + .18 * Math.sin(t * 11) + .1 * Math.sin(t * 23.7);
+  out.push({k: 'glow', p: [op.LED.x, op.LED.y + 4, op.LED.z], a: power * fl, s: 1.1});
+  out.push({k: 'flash', p: [op.LED.x, op.LED.y + 4, op.LED.z], a: power, s: .6});
+}
+function opAssembled(op, t, power){
+  const out = [], C = op.PIN_C, A = op.PIN_A;
+  for (let k = 0; k < 6; k++){ const u = (t / 2.4 + k / 6) % 1;
+    out.push({k: 'o2', p: along([[C[0] - 170, C[1], C[2]], [C[0] - 26, C[1], C[2]], [C[0] + 6, C[1], C[2]]], u), a: ramp(u, .1, .12)});
+    out.push({k: 'h2', p: along([[A[0] + 170, A[1], A[2]], [A[0] + 26, A[1], A[2]], [A[0] - 6, A[1], A[2]]], u), a: ramp(u, .1, .12)}); }
+  if (power > 0){
+    for (let k = 0; k < 4; k++){ const u = (t / 2.2 + k / 4) % 1, [x, y, z] = op.POUT_C;
+      out.push({k: 'drop', p: along([[x, y, z], [x - 30, y, z], [x - 46, y - 16, z], [x - 54, y - 110, z]], u), a: power * ramp(u, .1, .15)}); }
+    for (let k = 0; k < 14; k++){ const u = (t / 3.2 + k / 14) % 1; out.push({k: 'el', p: along(op.EP, u), a: power * ramp(u, .03, .03)}); }
+    ledParticles(op, out, t, power);
+  }
+  return out;
+}
+function opExploded(op, t, power){
+  const out = [], X = op.X, R = (k, j, s = 120) => (rr(k, j) - .5) * s;
+  // 가스 공급: 분리판 위에서 들어와 유로 → GDL → 촉매층
+  for (let k = 0; k < 9; k++){ const u = (t / 3.2 + k / 9) % 1, y = R(k, 2, 110), z = R(k, 3);
+    out.push({k: 'o2', p: along([[X(3), 160, z], [X(3), y, z], [X(5), y, z]], u), a: ramp(u, .08, .1)});
+    out.push({k: 'h2', p: along([[X(9), 160, -z], [X(9), y, -z], [X(7), y, -z]], (u + .37) % 1), a: ramp((u + .37) % 1, .08, .1)}); }
+  if (power > 0){
+    // 촉매층 반응 반짝임
+    for (let k = 0; k < 4; k++){ const ph = (t / 1.3 + k / 4) % 1;
+      out.push({k: 'flash', p: [X(7), R(k, 9, 100), R(k, 10, 100)], a: power * Math.sin(ph * Math.PI) * .9, s: .7});
+      out.push({k: 'flash', p: [X(5), R(k, 11, 100), R(k, 12, 100)], a: power * Math.sin(((ph + .5) % 1) * Math.PI) * .9, s: .7}); }
+    // H+ : 연료극 촉매층 → 막 → 공기극 촉매층
+    for (let k = 0; k < 12; k++){ const u = (t / 1.8 + k / 12) % 1, y = R(k, 4, 110), z = R(k, 5);
+      out.push({k: 'hp', p: along([[X(7), y, z], [X(5), y, z]], u), a: power * ramp(u, .08, .08)}); }
+    // e- : 연료극 촉매층 → GDL → 분리판 → 집전판 → 탭 → 도선 → LED → 공기극 집전판 → … → 공기극 촉매층
+    for (let k = 0; k < 26; k++){ const u = (t / 6.5 + k / 26) % 1, y = R(k, 6, 100), z = R(k, 7), y2 = R(k, 8, 100), z2 = R(k + 3, 7);
+      const p = [[X(7), y, z], [X(10), y, z], [X(10), 70, TABZ(10)], ...op.EP, [X(2), 70, TABZ(2)], [X(2), y2, z2], [X(5), y2, z2]];
+      out.push({k: 'el', p: along(p, u), a: power * ramp(u, .02, .02)}); }
+    // 막에 부딪혀 튕겨 나오는 e- (막은 전자를 통과시키지 않음)
+    for (let k = 0; k < 2; k++){ const u = (t / 2.2 + k / 2) % 1, f = u < .5 ? eio(u / .5) : 1 - eio((u - .5) / .5), y = 45 - k * 90, z = 25;
+      out.push({k: 'el', p: [X(7) + (X(6) + 5 - X(7)) * f, y, z], a: power * ramp(u, .08, .08)});
+      out.push({k: 'x', p: [X(6) + 3, y, z], a: power * Math.max(0, 1 - Math.abs(u - .5) * 6), s: 1.3}); }
+    // H2O : 공기극 촉매층 → GDL → 분리판 → 아래로 배출
+    for (let k = 0; k < 7; k++){ const u = (t / 3.4 + k / 7) % 1, y = R(k, 13, 90), z = R(k, 14);
+      out.push({k: u > .62 ? 'drop' : 'h2o', p: along([[X(5), y, z], [X(3), y, z], [X(3) - 6, -100, z], [X(3) - 10, -175, z]], u), a: power * ramp(u, .08, .1)}); }
+    ledParticles(op, out, t, power);
+  }
+  return out;
+}
+
+/* ======================================================= 상태 */
+let e = 0, eT = 0;
+let hovered = -1, selected = -1, hoverLocal = new THREE.Vector3(), calloutT = 0, calloutIdx = -1;
+let dragging = false, lastX = 0, lastY = 0, moved = 0;
+let rotY = 0, rotYT = 0, rotX = 0, rotXT = 0, opA = 0, opStart = 0;
+const mouse = new THREE.Vector2(-9, -9);
+const ray = new THREE.Raycaster();
+
+/* ======================================================= 정보 패널 */
+const infoEl = document.getElementById('info');
+const LEG = {h2: ['#6ec837', 'H₂ 수소'], o2: ['#3caaeb', 'O₂ 산소'], hp: ['#f5af14', 'H⁺ 수소이온'], el: ['#4669e6', 'e⁻ 전자'], h2o: ['#78b9f0', 'H₂O 물']};
+const LEG_FOR = {mem: ['hp', 'el', 'h2', 'o2'], cl: ['h2', 'o2', 'hp', 'el', 'h2o'], gdl: ['h2', 'o2', 'h2o'], bp: ['h2', 'o2', 'h2o'], cc: ['el'], insul: ['el'], endplate: ['h2', 'o2', 'h2o']};
+function renderInfo(i){
+  const c = COMPS[i], f = infoFor(c);
+  const mea = c.mea ? '<span class="tag mea">MEA</span>' : '';
+  const mini = COMPS.map((k, j) => `<i data-j="${j}" class="${j === i ? 'on' : ''}" style="background:${k.sw};height:${10 + k.t * .9 + (k.size - 140) / 4}px"></i>`).join('');
+  let legKeys = LEG_FOR[c.key];
+  if (c.key === 'cl') legKeys = c.side === 'cathode' ? ['o2', 'hp', 'el', 'h2o'] : ['h2', 'hp', 'el'];
+  if (c.key === 'gdl' || c.key === 'bp') legKeys = c.side === 'cathode' ? ['o2', 'h2o'] : ['h2'];
+  if (c.key === 'endplate') legKeys = c.side === 'cathode' ? ['o2', 'h2o'] : ['h2'];
+  infoEl.innerHTML = `
+    <div class="top"><span class="tag ${c.side}">${SIDE_TXT[c.side]}</span>${mea}<span>${i + 1} / ${COMPS.length}</span>
+      <button class="x" title="닫기 (ESC)">✕</button></div>
+    <h2>${f.name}</h2><div class="en">${f.en}</div>
+    <div class="sum">${f.summary}</div>
+    <div class="cap">▶ ${f.caption}</div>
+    <div class="legend">${legKeys.map(k => `<span><i style="background:${LEG[k][0]}"></i>${LEG[k][1]}</span>`).join('')}</div>
+    ${f.reaction ? `<div class="rx">${f.reaction}</div>` : ''}
+    <h4>역할</h4><ul>${f.roles.map(r => `<li>${r}</li>`).join('')}</ul>
+    <h4>소재</h4><p class="mat">${f.material}</p>
+    <h4>스택 내 위치</h4><div class="mini">${mini}</div><div class="minicap"><span>공기극 (+)</span><span>연료극 (−)</span></div>
+    <div class="nav"><button class="tb" data-d="-1">← 이전</button><button class="tb" data-d="1">다음 →</button></div>`;
+  infoEl.querySelector('.x').onclick = deselect;
+  infoEl.querySelectorAll('.nav button').forEach(b => b.onclick = () => step(+b.dataset.d));
+  infoEl.querySelectorAll('.mini i').forEach(b => b.onclick = () => select(+b.dataset.j));
+  infoEl.scrollTop = 0;
+}
+function select(i){ selected = i; hovered = -1; renderInfo(i); infoEl.classList.add('on'); items[i].pivot.add(fxGroup); }
+function deselect(){ selected = -1; infoEl.classList.remove('on'); if (fxGroup.parent) fxGroup.parent.remove(fxGroup); }
+function step(d){ if (selected < 0) return; select((selected + d + COMPS.length) % COMPS.length); }
+const btnEx = document.getElementById('btnExplode');
+btnEx.onclick = () => { eT = eT > .5 ? 0 : 1; btnEx.textContent = eT > .5 ? '조립하기' : '분해하기'; btnEx.blur(); };
+/* Space: 분해 ↔ 조립 (부모 프로그램에서 보낸 신호도 처리) */
+function toggleExplode(){ btnEx.onclick(); }
+addEventListener('message', e => { if (e.data === 'kiosk-space') toggleExplode(); });
+document.getElementById('btnReset').onclick = () => { rotYT = 0; rotXT = 0; camDistT = fitDist(); };
+addEventListener('keydown', ev => {
+  if (ev.code === 'Space' || ev.key === ' '){ ev.preventDefault(); if (!ev.repeat) toggleExplode(); return; }
+  if (ev.key === 'Escape') deselect();
+  if (ev.ctrlKey && ev.key.startsWith('Arrow')){ ev.preventDefault();
+    if (ev.key === 'ArrowLeft') rotYT -= .15; if (ev.key === 'ArrowRight') rotYT += .15;
+    if (ev.key === 'ArrowUp') rotXT = Math.max(-.5, rotXT - .08); if (ev.key === 'ArrowDown') rotXT = Math.min(.5, rotXT + .08);
+    return; }
+  if (ev.key === 'ArrowRight') selected < 0 ? select(0) : step(1);
+  if (ev.key === 'ArrowLeft') selected < 0 ? select(COMPS.length - 1) : step(-1);
+});
+
+/* ======================================================= 마우스 */
+canvas.addEventListener('pointerdown', ev => { mouse.x = ev.clientX / innerWidth * 2 - 1; mouse.y = -(ev.clientY / innerHeight) * 2 + 1; dragging = true; moved = 0; lastX = ev.clientX; lastY = ev.clientY; canvas.setPointerCapture(ev.pointerId); });
+canvas.addEventListener('pointermove', ev => {
+  mouse.x = ev.clientX / innerWidth * 2 - 1; mouse.y = -(ev.clientY / innerHeight) * 2 + 1;
+  if (dragging){
+    const dx = ev.clientX - lastX, dy = ev.clientY - lastY; lastX = ev.clientX; lastY = ev.clientY;
+    moved += Math.abs(dx) + Math.abs(dy);
+    if (moved > 4 && selected < 0){ canvas.classList.add('drag'); rotYT += dx * .006; rotXT = Math.max(-.5, Math.min(.5, rotXT + dy * .004)); }
+  }
+});
+canvas.addEventListener('pointerup', () => {
+  canvas.classList.remove('drag'); dragging = false;
+  if (moved > 5) return;
+  const hit = pick();
+  if (selected >= 0){ if (!hit || hit.idx !== selected) deselect(); return; }
+  if (hit) select(hit.idx);
+});
+canvas.addEventListener('pointerleave', () => mouse.set(-9, -9));
+canvas.addEventListener('wheel', ev => { ev.preventDefault(); camDistT = Math.max(900, Math.min(6000, camDistT * (1 + Math.sign(ev.deltaY) * .1))); }, {passive: false});
+/* iPad: 두 손가락 핀치로 확대/축소 */
+(function(){ let d0 = 0, z0 = 0; const dist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  canvas.addEventListener('touchstart', e => { if (e.touches.length === 2){ d0 = dist(e.touches); z0 = camDistT; dragging = false; } }, {passive: true});
+  canvas.addEventListener('touchmove', e => { if (e.touches.length === 2 && d0){ e.preventDefault(); camDistT = Math.max(900, Math.min(6000, z0 * d0 / dist(e.touches))); } }, {passive: false});
+  canvas.addEventListener('touchend', e => { if (e.touches.length < 2) d0 = 0; }, {passive: true});
+})();
+function pick(){
+  if (mouse.x < -2) return null;
+  ray.setFromCamera(mouse, camera);
+  const objs = selected >= 0 ? [items[selected].pivot] : items.map(it => it.pivot);
+  const h = ray.intersectObjects(objs, true).find(x => x.object.userData.idx !== undefined);
+  return h ? {idx: h.object.userData.idx, point: h.point} : null;
+}
+
+/* ======================================================= 콜아웃 (마우스 올렸을 때) */
+const svg = document.getElementById('callout'), cPoly = svg.querySelector('polyline'), cRing = svg.querySelector('.ring'),
+      cPip = svg.querySelector('.pip'), cText = svg.querySelector('text'), cKr = svg.querySelector('.kr'), cEn = svg.querySelector('.en');
+const tmp3 = new THREE.Vector3();
+function updateCallout(dt){
+  const show = hovered >= 0 && selected < 0;
+  if (show && calloutIdx !== hovered){
+    calloutIdx = hovered; calloutT = 0;
+    const f = infoFor(COMPS[hovered]), c = COMPS[hovered];
+    cKr.textContent = f.name;
+    cEn.textContent = f.en.replace(/ \(.*\)/, '') + (c.side === 'cathode' ? ' · 공기극' : c.side === 'anode' ? ' · 연료극' : '');
+  }
+  calloutT = show ? Math.min(1, calloutT + dt * 3.2) : Math.max(0, calloutT - dt * 6);
+  svg.style.opacity = calloutT > 0 ? 1 : 0;
+  if (calloutT <= 0 || calloutIdx < 0) return;
+  const pv = items[calloutIdx].pivot;
+  tmp3.copy(hoverLocal); pv.localToWorld(tmp3); tmp3.project(camera);
+  const ax = (tmp3.x + 1) / 2 * innerWidth, ay = (1 - tmp3.y) / 2 * innerHeight;
+  const tw = cText.getComputedTextLength() + 14;
+  const dir = ax + 60 + tw > innerWidth - 20 ? -1 : 1;
+  const p1 = [ax + dir * 42, ay - 62], p2 = [p1[0] + dir * tw, p1[1]];
+  const seg1 = Math.hypot(42, 62), total = seg1 + tw, grow = eio(calloutT / .75) * total;
+  // 선이 그려지는 애니메이션
+  let pts = [[ax, ay]];
+  if (grow <= seg1){ const f = grow / seg1; pts.push([ax + (p1[0] - ax) * f, ay + (p1[1] - ay) * f]); }
+  else { pts.push(p1); pts.push([p1[0] + dir * (grow - seg1), p1[1]]); }
+  cPoly.setAttribute('points', pts.map(p => p.join(',')).join(' '));
+  cRing.setAttribute('cx', ax); cRing.setAttribute('cy', ay); cPip.setAttribute('cx', ax); cPip.setAttribute('cy', ay);
+  cText.setAttribute('x', dir > 0 ? p1[0] + 6 : p2[0] + 6); cText.setAttribute('y', p1[1] - 8);
+  cText.style.opacity = clamp01((calloutT - .45) / .4);
+}
+
+/* ======================================================= 레이아웃 */
+function fitDist(){
+  const vh = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+  return Math.max(700 / vh, 1040 / (vh * camera.aspect)) * 1.05;
+}
+function resize(){
+  renderer.setSize(innerWidth, innerHeight, false);
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  camDistT = camDist = fitDist();
+}
+addEventListener('resize', resize); resize();
+
+const tmpM = new THREE.Matrix4(), tmpQ = new THREE.Quaternion(), tmpV = new THREE.Vector3();
+function selectedTarget(it, time){
+  const fwd = new THREE.Vector3(); camera.getWorldDirection(fwd);
+  const up = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1);
+  const right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0);
+  const vh = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+  const rightW = infoEl.offsetWidth + 18, freeW = innerWidth - rightW, freeH = innerHeight - 150;
+  const extra = it.c.key === 'cc' ? 1.45 : it.c.key === 'endplate' ? 1.25 : 1.15;   // 입자가 바깥으로 나가는 여유
+  const pxFrac = Math.min(freeH * .80 / innerHeight, freeW * .62 / innerWidth * camera.aspect) / extra;
+  const d = it.c.size / (pxFrac * vh);
+  const cx = freeW / 2, ndcX = cx / innerWidth * 2 - 1;
+  const cy = 75 + freeH / 2 + (it.c.key === 'cc' ? 75 : 0), ndcY = -(cy / innerHeight * 2 - 1);
+  const pos = camera.position.clone().addScaledVector(fwd, d)
+    .addScaledVector(right, ndcX * d * vh / 2 * camera.aspect).addScaledVector(up, ndcY * d * vh / 2);
+  const z = new THREE.Vector3().crossVectors(fwd, up);
+  const q = new THREE.Quaternion().setFromRotationMatrix(tmpM.makeBasis(fwd, up, z));
+  let yaw = THROUGH[it.c.key] ? -.78 : -.38;
+  if (it.c.key === 'endplate' && it.c.side === 'anode') yaw += Math.PI;
+  q.premultiply(new THREE.Quaternion().setFromAxisAngle(up, yaw))
+   .premultiply(new THREE.Quaternion().setFromAxisAngle(right, .12));
+  stack.updateMatrixWorld();
+  const lp = stack.worldToLocal(pos);
+  stack.getWorldQuaternion(tmpQ);
+  return {pos: lp, quat: tmpQ.invert().multiply(q)};
+}
+
+/* ======================================================= 루프 */
+const clock = new THREE.Clock();
+const banner = document.getElementById('opbanner');
+function tick(){
+  const dt = Math.min(clock.getDelta(), .05), time = clock.elapsedTime;
+  const k = 1 - Math.exp(-dt * 7), k2 = 1 - Math.exp(-dt * 10);
+  e += (eT - e) * (1 - Math.exp(-dt * 4));
+  rotY += (rotYT - rotY) * k2; rotX += (rotXT - rotX) * k2; camDist += (camDistT - camDist) * k2;
+  stack.rotation.set(0, rotY, 0);                       // 셀은 항상 똑바로 세움 (좌우 기울기 없음)
+  LOOK.y = 10 + 75 * (1 - e);
+  const elev = Math.max(-.05, Math.min(1.15, CAM_EL + rotX)); // 위/아래 각도는 카메라 높이로 조절
+  camDir.set(CAM_DIR.x / CAM_H * Math.cos(elev), Math.sin(elev), CAM_DIR.z / CAM_H * Math.cos(elev));
+  camera.position.copy(LOOK).addScaledVector(camDir, camDist * (.74 + .26 * e)); camera.lookAt(LOOK); camera.updateMatrixWorld();
+
+  // hover
+  if (!dragging && selected < 0){
+    const h = pick();
+    hovered = h ? h.idx : -1;
+    if (h && h.idx !== calloutIdx){ hoverLocal.copy(h.point); items[h.idx].pivot.worldToLocal(hoverLocal); }
+  }
+  canvas.classList.toggle('hover', hovered >= 0 && selected < 0);
+  updateCallout(dt);
+
+  const span = STACK_LEN + (GAP * 8 + GAP2 * 4) * e;
+  shadow.scale.set(span + 260, 1, 330); shadow.material.opacity = selected >= 0 ? .25 : 1;
+
+  items.forEach((it, i) => {
+    const isSel = i === selected, isHov = i === hovered && selected < 0;
+    it.hov += ((isHov ? 1 : 0) - it.hov) * k2;
+    let tp, tq, ts = 1 + .08 * it.hov;
+    if (isSel){ const t = selectedTarget(it, time); tp = t.pos; tq = t.quat; ts = 1; }
+    else { tp = tmpV.set(baseX(i, e), 14 * it.hov, 0); tq = tmpQ.identity(); }
+    it.pivot.position.lerp(tp, isSel ? k : k2);
+    it.pivot.quaternion.slerp(tq, isSel ? k : k2);
+    it.pivot.scale.setScalar(it.pivot.scale.x + (ts - it.pivot.scale.x) * k2);
+    const opT = selected >= 0 ? (isSel ? (THROUGH[it.c.key] ? .5 : 1) : .05) : (i > 0 && i < 12 && !isHov ? 1 - .5 * OPS[1].a : 1);
+    it.op += (opT - it.op) * k;
+    const tr = it.op < .995;
+    it.mats.forEach(m => { m.opacity = it.op; m.transparent = tr; m.depthWrite = !tr; m.emissive.setScalar(.10 * it.hov); });
+  });
+
+  // 선택 부품 역할 애니메이션
+  if (selected >= 0){ const out = []; FX[COMPS[selected].key](COMPS[selected], time, out); showParticles(fxPool, out, clamp01(items[selected].pivot.position.distanceTo(selectedTarget(items[selected], time).pos) < 60 ? 1 : .0)); }
+
+  // 작동 연출: [0] 조립 상태, [1] 분해 상태
+  const on = [selected < 0 && e < .03 && eT < .5, selected < 0 && e > .97 && eT > .5];
+  let maxA = 0;
+  OPS.forEach((op, j) => {
+    const tgt = on[j] ? 1 : 0;
+    if (tgt && op.a === 0) op.start = time;
+    op.a += (tgt - op.a) * (tgt ? 1 - Math.exp(-dt * 3) : 1 - Math.exp(-dt * 12)); if (op.a < .01 && !tgt) op.a = 0;
+    op.g.visible = op.a > 0; maxA = Math.max(maxA, op.a);
+    if (op.a > 0){
+      const tOp = time - op.start, power = eio((tOp - 1.2) / 1.0);
+      op.mats.forEach(m => m.opacity = op.a);
+      op.ledMat.emissiveIntensity = .15 + 1.4 * power * (.75 + .25 * Math.sin(time * 11));
+      showParticles(op.pool, (j ? opExploded : opAssembled)(op, tOp, power), op.a);
+      op.labels.forEach((d, i) => {
+        tmp3.set(...d.p); stack.localToWorld(tmp3); tmp3.project(camera);
+        const el = op.labelEls[i];
+        el.style.left = ((tmp3.x + 1) / 2 * innerWidth) + 'px'; el.style.top = ((1 - tmp3.y) / 2 * innerHeight) + 'px';
+        el.style.opacity = op.a * (d.power ? power : 1);
+      });
+    } else op.labelEls.forEach(el => el.style.opacity = 0);
+  });
+  banner.style.opacity = maxA > .5 ? 1 : 0;
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(tick);
+}
+tick();
+</script>
+<script>/* kiosk: report activity to the parent program */["pointerdown","keydown","wheel","touchstart"].forEach(e=>addEventListener(e,()=>{try{parent.postMessage("kiosk-activity","*")}catch(_){}},{passive:true}));</script>
+</body>
+</html>

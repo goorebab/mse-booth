@@ -1,0 +1,14 @@
+{
+  "name": "신소재공학과 전공 소개",
+  "short_name": "신소재공학과",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#ECECEC",
+  "theme_color": "#2E2E35",
+  "icons": [
+    {"src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}

@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="신소재공학과">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<meta name="theme-color" content="#2E2E35">
+<title>신소재공학과 전공 소개</title>
+<style>
+@font-face{font-family:"GM";src:local("Gmarket Sans Bold"),url("assets/GmarketSansBold.otf");font-weight:700}
+@font-face{font-family:"GM";src:local("Gmarket Sans Medium"),url("assets/GmarketSansMedium.otf");font-weight:500}
+@font-face{font-family:"PT";src:local("Pretendard Regular"),url("assets/Pretendard-Regular.otf");font-weight:400}
+@font-face{font-family:"PT";src:local("Pretendard Bold"),url("assets/Pretendard-Bold.otf");font-weight:700}
+:root{
+  --bg:#ECECEC; --board:#FFFFFF; --ink:#26262B; --ink2:#5E5E66; --mute:#9A9AA2;
+  --line:#D6D6DA; --chip:#F2F2F4; --dark:#2E2E35;
+  --s1:#3A6EA5; --s2:#2F8F83; --s3:#C0703A;   /* 기초 / 핵심 / 응용 */
+  --u: min(1vw, 1.778vh);                       /* 16:9 safe unit */
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--ink);font-family:"PT","Pretendard","Malgun Gothic",sans-serif;
+  -webkit-user-select:none;user-select:none;overflow:hidden;touch-action:manipulation;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;opacity:0;pointer-events:none;
+  transform:translateY(calc(var(--u)*1.5));transition:opacity .45s ease,transform .45s ease}
+.screen.on{opacity:1;pointer-events:auto;transform:none}
+.gm{font-family:"GM","Gmarket Sans",sans-serif}
+.tag{font-family:"GM";font-weight:500;font-size:calc(var(--u)*1.05);letter-spacing:.08em;color:var(--ink2)}
+
+/* ---------- HOME ---------- */
+#home{flex-direction:row;align-items:stretch}
+.home-left{flex:1.1;display:flex;flex-direction:column;justify-content:center;padding:0 calc(var(--u)*7)}
+.home-left .tag{margin-bottom:calc(var(--u)*1.6)}
+.home-title{font-family:"GM";font-weight:700;font-size:calc(var(--u)*6.4);line-height:1.1}
+.home-title span{color:var(--mute)}
+.home-sub{margin-top:calc(var(--u)*1.8);font-size:calc(var(--u)*1.9);color:var(--ink2);line-height:1.5}
+.cta{margin-top:calc(var(--u)*4.5);align-self:flex-start;display:flex;align-items:center;gap:calc(var(--u)*1.4);
+  background:var(--dark);color:#fff;border-radius:999px;padding:calc(var(--u)*1.9) calc(var(--u)*3.4);
+  font-family:"GM";font-weight:700;font-size:calc(var(--u)*2.5);box-shadow:0 calc(var(--u)*.8) calc(var(--u)*2.4) rgba(0,0,0,.18);
+  animation:pulse 2.6s ease-in-out infinite}
+.cta svg{width:calc(var(--u)*2.4);height:calc(var(--u)*2.4)}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.035)}}
+.cta:active{transform:scale(.97)}
+.home-hint{margin-top:calc(var(--u)*1.4);font-size:calc(var(--u)*1.2);color:var(--mute)}
+.home-right{flex:.9;position:relative;background:#E2E2E5;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-bottom:calc(var(--u)*12)}
+.lattice{display:grid;grid-template-columns:repeat(6,1fr);gap:calc(var(--u)*1.8)}
+.lattice i{width:calc(var(--u)*3.2);height:calc(var(--u)*3.2);border-radius:50%;background:#4A4A52;
+  animation:breathe 4s ease-in-out infinite}
+.lattice i.s{width:calc(var(--u)*1.9);height:calc(var(--u)*1.9);margin:calc(var(--u)*.65);background:#B9B9C0}
+@keyframes breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(calc(var(--u)*-.5))}}
+.lattice-cap{margin-top:calc(var(--u)*2.6);text-align:center;font-family:"GM";font-weight:500;
+  font-size:calc(var(--u)*1.3);color:var(--ink2)}
+.qr{position:absolute;right:calc(var(--u)*3);bottom:calc(var(--u)*3);display:flex;align-items:center;gap:calc(var(--u)*1.2);
+  background:#fff;border-radius:calc(var(--u)*1.2);padding:calc(var(--u)*1.1);box-shadow:0 calc(var(--u)*.4) calc(var(--u)*1.6) rgba(0,0,0,.10)}
+.qr img{width:calc(var(--u)*8.5);height:calc(var(--u)*8.5);display:block}
+.qr b{display:block;font-family:"GM";font-weight:700;font-size:calc(var(--u)*1.25)}
+.qr small{display:block;margin-top:calc(var(--u)*.4);font-size:calc(var(--u)*1.05);color:var(--ink2);line-height:1.4}
+
+/* ---------- TOP BAR ---------- */
+.bar{display:flex;align-items:center;justify-content:space-between;padding:calc(var(--u)*2.2) calc(var(--u)*3.5) 0}
+.pill{display:flex;align-items:center;gap:calc(var(--u)*.7);background:#fff;border-radius:999px;
+  padding:calc(var(--u)*1) calc(var(--u)*1.9);font-family:"GM";font-weight:500;font-size:calc(var(--u)*1.25);
+  box-shadow:0 calc(var(--u)*.2) calc(var(--u)*.8) rgba(0,0,0,.08)}
+.pill svg{width:calc(var(--u)*1.5);height:calc(var(--u)*1.5)}
+.pill:active{transform:scale(.96)}
+
+/* ---------- COURSES ---------- */
+.c-head{text-align:center;margin-top:calc(var(--u)*.6)}
+.c-head h1{font-family:"GM";font-weight:700;font-size:calc(var(--u)*3.2);margin-top:calc(var(--u)*.6)}
+.c-head h1 span{color:var(--mute)}
+.c-head p{margin-top:calc(var(--u)*.8);font-size:calc(var(--u)*1.45);color:var(--ink2)}
+.stages{flex:1;min-height:0;display:flex;align-items:stretch;gap:calc(var(--u)*1.2);padding:calc(var(--u)*2.2) calc(var(--u)*3.5) calc(var(--u)*3.2)}
+.stage{display:flex;flex-direction:column;gap:calc(var(--u)*1.2);min-width:0}
+.stage[data-n="1"] .stage-h em{display:none}
+.stage[data-n="3"]{flex:3}.stage[data-n="2"]{flex:2}.stage[data-n="1"]{flex:1.15}
+.stage-h{display:flex;align-items:baseline;gap:calc(var(--u)*.8);padding-left:calc(var(--u)*.4);white-space:nowrap;overflow:hidden;flex:none}
+.stage-h b{font-family:"GM";font-weight:700;font-size:calc(var(--u)*1.7)}
+.stage-h small{font-family:"GM";font-weight:500;font-size:calc(var(--u)*1.05);color:var(--mute);letter-spacing:.06em}
+.stage-h em{font-style:normal;font-size:calc(var(--u)*1.15);color:var(--ink2)}
+.cards{flex:1;display:flex;gap:calc(var(--u)*1.2)}
+.arrow{display:flex;align-items:center;padding-top:calc(var(--u)*3)}
+.arrow svg{width:calc(var(--u)*2.2);height:calc(var(--u)*2.2);color:var(--mute)}
+.card{flex:1;min-width:0;background:var(--board);border-radius:calc(var(--u)*1.4);display:flex;flex-direction:column;
+  overflow:hidden;text-align:left;box-shadow:0 calc(var(--u)*.3) calc(var(--u)*1.2) rgba(0,0,0,.07);
+  transition:transform .2s ease,box-shadow .2s ease}
+.card:hover{transform:translateY(calc(var(--u)*-.4));box-shadow:0 calc(var(--u)*.8) calc(var(--u)*2.2) rgba(0,0,0,.12)}
+.card:active{transform:scale(.98)}
+.card .thumb{flex:none;display:flex;align-items:center;justify-content:center;padding:calc(var(--u)*2) 0 calc(var(--u)*1.2);
+  background:var(--chip)}
+.card .thumb .book{height:calc(var(--u)*15)}
+.card .meta{padding:calc(var(--u)*1.3) calc(var(--u)*1.3) calc(var(--u)*1.5)}
+.card .en{font-family:"GM";font-weight:500;font-size:calc(var(--u)*.85);letter-spacing:.03em;line-height:1.25;min-height:2.5em}
+.card h3{font-family:"GM";font-weight:700;font-size:calc(var(--u)*1.8);white-space:nowrap;margin-top:calc(var(--u)*.5)}
+.card p{margin-top:calc(var(--u)*.6);word-break:keep-all;font-size:calc(var(--u)*1.15);color:var(--ink2);line-height:1.45}
+.card .more{margin-top:calc(var(--u)*1);font-family:"GM";font-weight:500;font-size:calc(var(--u)*1.05);display:flex;align-items:center;gap:calc(var(--u)*.4)}
+.card .more svg{width:calc(var(--u)*1.2);height:calc(var(--u)*1.2)}
+
+/* book visual */
+.book{aspect-ratio:7/9.4;border-radius:calc(var(--u)*.25) calc(var(--u)*.6) calc(var(--u)*.6) calc(var(--u)*.25);overflow:hidden;
+  position:relative;background:#fff;box-shadow:calc(var(--u)*.5) calc(var(--u)*.7) calc(var(--u)*1.6) rgba(0,0,0,.28)}
+.book img{width:100%;height:100%;object-fit:cover;display:block}
+.book::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.18),rgba(255,255,255,.12) 4%,rgba(0,0,0,0) 9%)}
+.book.made{background:#1F3B4D;color:#fff;display:flex;flex-direction:column;justify-content:space-between;padding:9% 10%}
+.book.made svg{width:62%;align-self:flex-end;opacity:.9}
+.book.made .t1{font-family:"GM";font-weight:700;font-size:1em;line-height:1.1}
+.book.made .t2{font-family:"GM";font-weight:500;font-size:.42em;letter-spacing:.08em;opacity:.8;margin-top:.5em}
+
+/* ---------- DETAIL ---------- */
+.d-body{flex:1;display:flex;gap:calc(var(--u)*4);padding:calc(var(--u)*2) calc(var(--u)*5) calc(var(--u)*3);min-height:0}
+.d-left{width:calc(var(--u)*30);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:calc(var(--u)*1.3)}
+.d-left .book{width:calc(var(--u)*21);font-size:calc(var(--u)*3.2)}
+#d-book{display:flex;justify-content:center}
+.d-left .src{font-size:calc(var(--u)*1.05);color:var(--ink2);text-align:center;line-height:1.5}
+.d-right{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0}
+.d-stage{display:inline-flex;align-self:flex-start;align-items:center;gap:calc(var(--u)*.6);color:#fff;border-radius:999px;
+  padding:calc(var(--u)*.45) calc(var(--u)*1.3);font-family:"GM";font-weight:500;font-size:calc(var(--u)*1.05)}
+.d-title{display:flex;align-items:baseline;gap:calc(var(--u)*1.4);margin-top:calc(var(--u)*.8)}
+.d-title h1{font-family:"GM";font-weight:700;font-size:calc(var(--u)*3.5)}
+.d-title span{font-family:"GM";font-weight:500;font-size:calc(var(--u)*1.5);color:var(--mute)}
+.d-hook{margin-top:calc(var(--u)*.4);font-family:"GM";font-weight:500;font-size:calc(var(--u)*1.65);color:var(--ink2)}
+.d-desc{margin-top:calc(var(--u)*1.2);font-size:calc(var(--u)*1.32);line-height:1.6;max-width:62em}
+.d-qs{display:flex;flex-direction:column;gap:calc(var(--u)*1);width:100%;margin-top:calc(var(--u)*.6)}
+.q{background:#fff;border-radius:calc(var(--u)*1.1);padding:calc(var(--u)*1.1) calc(var(--u)*1.4);display:flex;gap:calc(var(--u)*1);align-items:flex-start}
+.q i{font-style:normal;font-family:"GM";font-weight:700;font-size:calc(var(--u)*1.7);line-height:1}
+.q div{font-size:calc(var(--u)*1.25);line-height:1.4}
+.q small{display:block;margin-top:calc(var(--u)*.3);color:var(--mute);font-size:calc(var(--u)*1.0)}
+.toc-h{display:flex;align-items:baseline;justify-content:space-between;margin-top:calc(var(--u)*1.6);padding-bottom:calc(var(--u)*.8);
+  border-bottom:1px solid var(--line)}
+.toc-h b{font-family:"GM";font-weight:700;font-size:calc(var(--u)*1.55)}
+.toc-h small{font-size:calc(var(--u)*1.05);color:var(--mute)}
+.toc{flex:1;min-height:0;overflow:auto;margin-top:calc(var(--u)*.4)}
+.grp{display:flex;gap:calc(var(--u)*1.4);padding:calc(var(--u)*.6) 0;border-bottom:1px solid var(--line)}
+.grp>b{width:calc(var(--u)*11);flex:none;font-family:"GM";font-weight:500;font-size:calc(var(--u)*1.2);padding-top:calc(var(--u)*.4)}
+.chips{display:flex;flex-wrap:wrap;gap:calc(var(--u)*.45)}
+.chip{background:#fff;border-radius:999px;padding:calc(var(--u)*.35) calc(var(--u)*1);font-size:calc(var(--u)*1.02);white-space:nowrap}
+.chip.hl{color:#fff}
+.d-nav{display:flex;gap:calc(var(--u)*1)}
+.booth{margin-top:calc(var(--u)*1.2);font-size:calc(var(--u)*1.2);display:flex;gap:calc(var(--u)*.6);align-items:center;color:var(--ink2)}
+.booth b{font-family:"GM";font-weight:700;color:var(--ink)}
+
+/* ---------- RESEARCH (embedded simulators) ---------- */
+.labs{display:flex;gap:calc(var(--u)*1.2);margin-top:calc(var(--u)*1.6)}
+.lab{display:flex;align-items:center;gap:calc(var(--u)*1.1);background:#fff;border-radius:calc(var(--u)*1.4);
+  padding:calc(var(--u)*1.2) calc(var(--u)*1.8) calc(var(--u)*1.2) calc(var(--u)*1.2);text-align:left;
+  box-shadow:0 calc(var(--u)*.3) calc(var(--u)*1.2) rgba(0,0,0,.08);transition:transform .2s ease}
+.lab:active{transform:scale(.97)}
+.lab .ic{width:calc(var(--u)*4.2);height:calc(var(--u)*4.2);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;flex:none}
+.lab .ic svg{width:55%;height:55%}
+.lab b{display:block;font-family:"GM";font-weight:700;font-size:calc(var(--u)*1.7)}
+.lab small{display:block;margin-top:calc(var(--u)*.35);font-size:calc(var(--u)*1.1);color:var(--ink2)}
+#research .bar{padding:calc(var(--u)*1) calc(var(--u)*2);align-items:center;background:var(--bg)}
+#research .r-title{font-family:"GM";font-weight:700;font-size:calc(var(--u)*1.5)}
+#research .r-title span{font-weight:500;color:var(--mute);margin-left:calc(var(--u)*.8);font-size:.8em}
+#labframe{flex:1;width:100%;border:0;background:#fff;display:block}
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<section class="screen on" id="home">
+  <div class="home-left">
+    <div class="tag">l DEPARTMENT OF ADVANCED MATERIALS l</div>
+    <div class="home-title">신소재<span>공학과</span></div>
+    <div class="home-sub">원자 단위로 재료를 설계해<br>새로운 성능을 만드는 학문</div>
+    <button class="cta" data-go="courses">어떤 걸 배우나요?
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </button>
+    <div class="labs">
+      <button class="lab" data-lab="fuelcell"><span class="ic" style="background:var(--s2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></span>
+        <span><b>연료전지 연구</b><small>수소 연료전지 셀 3D 탐색</small></span></button>
+      <button class="lab" data-lab="semicon"><span class="ic" style="background:var(--s1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="1.5"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></svg></span>
+        <span><b>반도체 연구</b><small>유기반도체 C8-BTBT 패터닝</small></span></button>
+    </div>
+    <div class="home-hint">버튼을 눌러 둘러보세요</div>
+  </div>
+  <div class="home-right">
+    <div class="lattice" id="lattice"></div>
+    <div class="lattice-cap">Atoms → Crystal → Material</div>
+    <div class="qr">
+      <img src="assets/qr_instagram.svg" alt="신소재공학과 학생회 인스타그램 QR">
+      <div><b>학생회 인스타그램</b><small>@hnu_advanced_material<br>QR로 팔로우하고 소식 받기</small></div>
+    </div>
+  </div>
+</section>
+
+<!-- COURSES -->
+<section class="screen" id="courses">
+  <div class="bar">
+    <button class="pill" data-go="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>처음으로</button>
+    <div></div>
+  </div>
+  <div class="c-head">
+    <div class="tag">l CURRICULUM l</div>
+    <h1>어떤 걸 <span>배우나요?</span></h1>
+    <p>기초 과학에서 출발해 고분자 소재를 만들고, 이해하고, 응용하기까지. 궁금한 과목을 눌러보세요</p>
+  </div>
+  <div class="stages" id="stages"></div>
+</section>
+
+<!-- DETAIL -->
+<section class="screen" id="detail">
+  <div class="bar">
+    <button class="pill" data-go="courses"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>전공 과목 목록</button>
+    <div class="d-nav">
+      <button class="pill" id="prev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg><span></span></button>
+      <button class="pill" id="next"><span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+    </div>
+  </div>
+  <div class="d-body">
+    <div class="d-left"><div id="d-book"></div><div class="src" id="d-src"></div><div class="d-qs" id="d-qs"></div></div>
+    <div class="d-right">
+      <div class="d-stage" id="d-stage"></div>
+      <div class="d-title"><h1 id="d-name"></h1><span id="d-en"></span></div>
+      <div class="d-hook" id="d-hook"></div>
+      <div class="d-desc" id="d-desc"></div>
+      <div class="booth" id="d-booth"></div>
+      <div class="toc-h"><b>목차 한눈에 보기</b><small id="d-count"></small></div>
+      <div class="toc" id="d-toc"></div>
+    </div>
+  </div>
+</section>
+
+<!-- RESEARCH -->
+<section class="screen" id="research">
+  <div class="bar">
+    <button class="pill" data-go="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>처음으로</button>
+    <div class="r-title" id="r-title"></div>
+    <button class="pill" id="r-switch"></button>
+  </div>
+  <iframe id="labframe" src="about:blank" title="연구 시뮬레이션" allow="fullscreen"></iframe>
+</section>
+
+<script>
+/* ===== 내용 수정은 여기서 ===== */
+const LABS = {
+  fuelcell:{name:"연료전지 연구", sub:"PEMFC 셀 탐색기", src:"research/fuelcell/index.html"},
+  semicon: {name:"반도체 연구",   sub:"C8-BTBT 라인 패터닝", src:"research/semicon/index.html"}
+};
+const STAGES = [
+  {key:"기초", en:"FOUNDATION", color:"var(--s1)", desc:"재료를 이해하는 언어"},
+  {key:"핵심", en:"CORE",       color:"var(--s2)", desc:"고분자를 만들고 이해하기"},
+  {key:"응용", en:"APPLICATION",color:"var(--s3)", desc:"제품과 첨단 기술로"}
+];
+const COURSES = [
+{
+  id:"organic", stage:0, name:"유기화학", en:"Organic Chemistry",
+  cover:null, coverTitle:"유기화학", coverEn:"ORGANIC CHEMISTRY",
+  src:"유기화학 (번역서) · 총 31장",
+  hook:"탄소 분자의 언어를 배우는 과목",
+  desc:"플라스틱, 섬유, 의약품의 뼈대는 모두 탄소 화합물입니다. 원자가 어떻게 결합하는지, 반응할 때 전자가 어디로 움직이는지(반응 메커니즘)를 배우고, 빛을 쪼여 분자 구조를 알아내는 분광법(IR·NMR·질량 분석)을 익힙니다. 책의 마지막 장이 바로 ‘합성 고분자’여서 고분자 과목으로 자연스럽게 이어집니다.",
+  qs:[["같은 원자로 만든 분자가 왜 약도 되고 독도 될까?","입체 화학"],["눈에 안 보이는 분자 구조를 어떻게 알아낼까?","적외선·핵자기 공명 분광법"]],
+  toc:[
+    ["분자의 기초",["구조와 결합","산과 염기","유기 화합물과 작용기","알케인","입체 화학"]],
+    ["반응의 원리",["유기 반응의 이해","친핵성 치환 반응","제거 반응","알코올·에터","알켄과 첨가 반응","알카인과 합성","산화와 환원","라디칼 반응"]],
+    ["구조 분석",["질량 분석법","적외선 분광법","핵자기 공명 분광법"]],
+    ["방향족·카보닐",["콘쥬게이션·공명·다이엔","벤젠과 방향족 화합물","방향족 화합물의 반응","카보닐 화학의 소개","알데하이드와 케톤","카복실산과 나이트릴","카복실산 유도체","α 탄소 반응","카보닐 축합 반응","아민"]],
+    ["합성·생체·고분자",["탄소–탄소 결합 형성","고리형 협동 반응","탄수화물","아미노산과 단백질",{t:"합성 고분자",hl:1}]]
+  ]
+},
+{
+  id:"atkins", stage:0, name:"물리화학", en:"Physical Chemistry",
+  cover:"assets/cover_atkins.jpg",
+  src:"Atkins’ Physical Chemistry 11판<br>P. Atkins, J. de Paula, J. Keeler",
+  hook:"변화가 일어날지 미리 계산하는 과목",
+  desc:"화학을 물리와 수학으로 설명합니다. 에너지와 엔트로피로 어떤 변화가 저절로 일어나는지 예측하고(열역학), 원자와 분자를 양자역학으로 이해하며, 반응이 얼마나 빨리 일어나는지(반응 속도론) 계산합니다. 녹는점과 상변화, 전지, 고체와 표면에서 일어나는 일까지 소재를 다루는 모든 과목의 바탕이 됩니다.",
+  qs:[["얼음은 왜 물에 뜨고, 눌러주면 녹을까?","순수한 물질의 상평형"],["전지의 전압은 무엇이 결정할까?","화학 평형 · 전기화학 셀"]],
+  toc:[
+    ["열역학",["기체의 성질","열역학 1법칙","2법칙과 3법칙","순수한 물질의 물리적 변환","단순 혼합물","화학 평형"]],
+    ["양자와 분자 구조",["양자론","원자 구조와 스펙트럼","분자 구조","분자 대칭"]],
+    ["분광학",["분자 분광학","자기 공명"]],
+    ["분자의 통계·운동",["통계 열역학","분자들의 운동"]],
+    ["반응 속도",["반응 속도론","반응 동역학"]],
+    ["물질과 표면",["분자 간 상호 작용",{t:"고체",hl:1},"고체 표면에서의 과정"]]
+  ]
+},
+{
+  id:"callister", stage:0, name:"재료과학", en:"Materials Science & Engineering",
+  cover:"assets/cover_callister.jpg",
+  src:"Materials Science and Engineering 10판<br>W. D. Callister Jr., D. G. Rethwisch",
+  hook:"금속·세라믹·고분자를 한눈에 보는 신소재공학의 지도",
+  desc:"원자가 어떻게 결합하고 배열되는지(결정 구조와 결함)가 재료의 강도, 전기, 열, 빛에 대한 성질을 결정한다는 것을 배웁니다. 금속, 세라믹, 고분자, 복합재료를 모두 다루고 부식과 환경 문제까지 살펴보는, 신소재공학의 출발점이 되는 과목입니다.",
+  qs:[["금속은 휘는데 유리는 왜 깨질까?","기계적 성질 · 파괴"],["반도체는 왜 온도에 따라 전기가 다르게 흐를까?","전기적 성질"]],
+  toc:[
+    ["원자와 구조",["서론","원자 구조와 원자 간 결합","결정 고체의 구조","고체의 결함","확산"]],
+    ["기계적 성질",["금속의 기계적 성질","전위와 강화 기구","파괴"]],
+    ["상과 미세구조",["상태도","상변태와 미세구조"]],
+    ["재료의 종류",["금속 합금","세라믹의 구조와 성질","세라믹의 응용과 가공",{t:"고분자의 구조",hl:1},{t:"고분자의 특성·응용·가공",hl:1},"복합재료"]],
+    ["기능과 환경",["부식과 열화","전기적 성질","열적 성질","자기적 성질","광학적 성질","환경과 사회"]]
+  ]
+},
+{
+  id:"polychem", stage:1, name:"고분자화학", en:"Polymer Chemistry",
+  cover:"assets/cover_polychem.jpg",
+  src:"고분자 화학 입문 3판 (Polymer Chemistry: An Introduction)<br>M. P. Stevens",
+  hook:"작은 분자를 길게 이어 고분자를 만드는 방법",
+  desc:"단량체 수천~수만 개를 사슬처럼 이어 붙이는 ‘중합’을 배웁니다. 라디칼·이온·촉매(Ziegler–Natta)로 만드는 비닐계 고분자와, 축합·개환 중합으로 만드는 나일론·폴리에스테르·폴리우레탄·폴리이미드, 그리고 실리콘 같은 무기 고분자와 셀룰로스·단백질 같은 천연 고분자까지, 고분자를 ‘어떻게 만드는가’에 집중합니다.",
+  qs:[["페트병과 나일론 스타킹은 어떻게 만들까?","폴리에스테르 · 폴리아미드"],["사슬 길이(분자량)는 어떻게 잴까?","분자량과 고분자 용액"]],
+  toc:[
+    ["1부 구조와 물성",["기본 원리","분자량과 고분자 용액","화학 구조와 모폴로지","화학 구조와 물성","평가·특성 분석"]],
+    ["2부 비닐계 고분자",["자유 라디칼 중합","이온 중합","배위 촉매 중합 (Ziegler–Natta)","고분자의 반응"]],
+    ["3부 비비닐계 고분자",["단계 반응·개환 중합","폴리에테르·폴리설파이드","폴리에스테르","폴리아미드","페놀·요소·멜라민 수지","헤테로고리 고분자","무기 고분자","기타 유기 고분자","천연 고분자"]]
+  ]
+},
+{
+  id:"sperling", stage:1, name:"고분자물리", en:"Physical Polymer Science",
+  cover:"assets/cover_sperling.jpg",
+  src:"Introduction to Physical Polymer Science 4판<br>L. H. Sperling",
+  hook:"긴 사슬 분자가 어떻게 움직이고 쌓이는지 이해하는 과목",
+  desc:"같은 플라스틱도 온도에 따라 딱딱해지기도 하고 말랑해지기도 합니다. 긴 사슬이 엉키고, 결정을 만들고, 늘어났다 돌아오는 원리를 물리로 설명합니다. 유리전이온도(Tg), 고무 탄성, 시간에 따라 성질이 변하는 점탄성이 핵심 개념이며, 표면과 블렌드 같은 다성분 재료까지 다룹니다.",
+  qs:[["고무줄은 왜 늘어났다가 다시 돌아올까?","가교 고분자와 고무 탄성"],["겨울에 플라스틱이 더 잘 깨지는 이유는?","유리–고무 전이"]],
+  toc:[
+    ["사슬과 용액",["고분자 과학 입문","사슬 구조와 배열","묽은 용액·분자량·크기","진한 용액·상분리·확산"]],
+    ["고체 상태",["비정질 상태","결정 상태","액정 상태"]],
+    ["전이와 탄성",[{t:"유리–고무 전이",hl:1},"가교 고분자와 고무 탄성","점탄성과 유변학","기계적 거동"]],
+    ["표면과 다성분",["표면과 계면","다성분 고분자 재료","최신 고분자 주제"]]
+  ]
+},
+{
+  id:"fried", stage:2, name:"고분자공학", en:"Polymer Science & Technology",
+  cover:"assets/cover_fried.jpg",
+  src:"Polymer Science and Technology 3판<br>J. R. Fried",
+  hook:"고분자를 실제 제품과 첨단 기술로 만드는 과목",
+  desc:"합성과 물성을 바탕으로 첨가제·블렌드·복합재로 성능을 높이고, 사출·압출 같은 가공으로 제품을 만드는 과정을 배웁니다. 플라스틱 분해와 재활용, 분리막·약물 전달·전자·에너지·센서 같은 첨단 응용, 그리고 시뮬레이션과 인공신경망으로 고분자 물성을 예측하는 방법까지 다룹니다.",
+  qs:[["플라스틱 쓰레기는 어떻게 줄일 수 있을까?","고분자 분해와 환경"],["연료전지 속 얇은 막은 어떤 고분자일까?","분리막 · 에너지 응용"]],
+  booth:"테이블 위 <b>멤브레인(Nafion 212)</b>과 <b>연료전지 셀</b>이 바로 이 과목의 ‘첨단 응용’ 분야예요",
+  toc:[
+    ["기초",["고분자 과학 입문","고분자 합성","형태·용액·분자량","고체 물성","점탄성과 고무 탄성"]],
+    ["환경과 소재 설계",["고분자 분해와 환경","첨가제·블렌드·블록 공중합체·복합재","생체·천연 고분자와 섬유"]],
+    ["고분자의 종류",["열가소성·엘라스토머·열경화성","엔지니어링·특수 고분자"]],
+    ["가공과 첨단 응용",["가공과 유변학",{t:"첨단 기술용 고분자 (분리막·바이오·전자·에너지·센서)",hl:1},"상관관계와 시뮬레이션 (인공신경망)"]]
+  ]
+}
+];
+/* ============================ */
+
+const $=s=>document.querySelector(s);
+const arrowSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+const benzene='<svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="3"><polygon points="50,8 86,29 86,71 50,92 14,71 14,29"/><circle cx="50" cy="50" r="22"/><line x1="86" y1="29" x2="98" y2="20"/><line x1="14" y1="71" x2="2" y2="80"/></svg>';
+function bookHTML(c){
+  if(c.cover) return `<div class="book"><img src="${c.cover}" alt="${c.name} 교재 표지"></div>`;
+  return `<div class="book made"><div><div class="t1">${c.coverTitle}</div><div class="t2">${c.coverEn}</div></div>${benzene}</div>`;
+}
+
+/* lattice on home */
+(function(){let h="";for(let r=0;r<6;r++)for(let k=0;k<6;k++){const big=(r+k)%2===0;h+=`<i class="${big?"":"s"}" style="animation-delay:${((r+k)%6)*.35}s"></i>`}$("#lattice").innerHTML=h})();
+
+/* course grid */
+(function(){
+  let h="";
+  STAGES.forEach((s,si)=>{
+    const list=COURSES.filter(c=>c.stage===si);
+    if(si>0) h+=`<div class="arrow">${arrowSvg}</div>`;
+    h+=`<div class="stage" data-n="${list.length}"><div class="stage-h"><b style="color:${s.color}">${s.key}</b><small>${s.en}</small><em>${s.desc}</em></div><div class="cards">`;
+    list.forEach(c=>{
+      h+=`<button class="card" data-id="${c.id}"><div class="thumb">${bookHTML(c)}</div><div class="meta">
+        <div class="en" style="color:${s.color}">${c.en.toUpperCase()}</div><h3>${c.name}</h3><p>${c.hook}</p>
+        <div class="more" style="color:${s.color}">자세히 보기 ${arrowSvg}</div></div></button>`;
+    });
+    h+=`</div></div>`;
+  });
+  $("#stages").innerHTML=h;
+  document.querySelectorAll(".card").forEach(b=>b.onclick=()=>openCourse(b.dataset.id));
+  document.querySelectorAll(".card .book.made").forEach(b=>b.style.fontSize="calc(var(--u)*1.9)");
+})();
+
+let cur=0;
+function openCourse(id){
+  cur=COURSES.findIndex(c=>c.id===id); const c=COURSES[cur], s=STAGES[c.stage];
+  $("#d-book").innerHTML=bookHTML(c);
+  $("#d-src").innerHTML=c.src;
+  const st=$("#d-stage"); st.textContent=`${s.key} · ${s.en}`; st.style.background=s.color;
+  $("#d-name").textContent=c.name; $("#d-en").textContent=c.en;
+  $("#d-hook").textContent=c.hook; $("#d-desc").textContent=c.desc;
+  $("#d-qs").innerHTML=c.qs.map(q=>`<div class="q"><i style="color:${s.color}">Q</i><div>${q[0]}<small>→ ${q[1]}</small></div></div>`).join("");
+  $("#d-booth").innerHTML=c.booth?`<b style="color:${s.color}">부스에서 직접 보기</b> ${c.booth}`:"";
+  let n=0;
+  $("#d-toc").innerHTML=c.toc.map(g=>`<div class="grp"><b>${g[0]}</b><div class="chips">${g[1].map(x=>{n++;const o=typeof x==="string"?{t:x}:x;
+      return `<span class="chip${o.hl?" hl":""}" ${o.hl?`style="background:${s.color}"`:""}>${o.t}</span>`}).join("")}</div></div>`).join("");
+  const hasHl=c.toc.some(g=>g[1].some(x=>x.hl));
+  $("#d-count").textContent=`총 ${n}장${hasHl?" · 색칠된 장은 신소재·고분자와 바로 연결되는 부분":""}`;
+  $("#d-toc").scrollTop=0;
+  const p=COURSES[(cur+COURSES.length-1)%COURSES.length], q=COURSES[(cur+1)%COURSES.length];
+  $("#prev span").textContent=p.name; $("#next span").textContent=q.name;
+  show("detail");
+}
+$("#prev").onclick=()=>openCourse(COURSES[(cur+COURSES.length-1)%COURSES.length].id);
+$("#next").onclick=()=>openCourse(COURSES[(cur+1)%COURSES.length].id);
+
+function show(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on",s.id===id));
+  if(id!=="research"){const f=$("#labframe"); if(f.getAttribute("src")!=="about:blank") f.setAttribute("src","about:blank");}
+}
+let curLab=null;
+function openLab(key){
+  const L=LABS[key]; curLab=key;
+  $("#r-title").innerHTML=`${L.name}<span>${L.sub}</span>`;
+  const other=key==="fuelcell"?"semicon":"fuelcell";
+  $("#r-switch").innerHTML=`${LABS[other].name} 보기 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>`;
+  $("#r-switch").onclick=()=>openLab(other);
+  if(document.activeElement)document.activeElement.blur();
+  const fr=$("#labframe"); fr.onload=()=>{try{fr.contentWindow.focus()}catch(_){}}; fr.setAttribute("src",L.src);
+  show("research");
+}
+document.querySelectorAll("[data-lab]").forEach(b=>b.onclick=()=>openLab(b.dataset.lab));
+/* 3D 화면 안에서 만져도 '사용 중'으로 인정 */
+addEventListener("message",e=>{if(e.data==="kiosk-activity")resetIdle()});
+document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>show(b.dataset.go));
+
+/* keyboard: ← → 과목 이동, Esc 뒤로 */
+document.addEventListener("keydown",e=>{
+  const on=document.querySelector(".screen.on").id;
+  if(e.key==="Escape"||e.key==="Backspace"){ if(on==="detail")show("courses"); else if(on==="courses"||on==="research")show("home"); }
+  if(on==="detail"&&e.key==="ArrowRight")$("#next").click();
+  if(on==="detail"&&e.key==="ArrowLeft")$("#prev").click();
+  if(on==="home"&&(e.key==="Enter"||e.key===" "))show("courses");
+  /* 연료전지 화면: 포커스가 바깥에 있어도 Space로 분해/조립 */
+  if(on==="research"&&curLab==="fuelcell"&&(e.code==="Space"||e.key===" ")){e.preventDefault();if(!e.repeat)$("#labframe").contentWindow.postMessage("kiosk-space","*");$("#labframe").focus();}
+});
+document.addEventListener("contextmenu",e=>e.preventDefault());
+
+/* 90초 동안 아무도 안 만지면 처음 화면으로 */
+let idle; const IDLE_MS=90000;
+function resetIdle(){clearTimeout(idle);idle=setTimeout(()=>show("home"),IDLE_MS)}
+["pointerdown","keydown","wheel","touchstart"].forEach(ev=>document.addEventListener(ev,resetIdle,{passive:true}));
+resetIdle();
+
+/* 주소 뒤 #courses 또는 #과목id 로 바로 열기 (확인용) */
+(function(){const h=decodeURIComponent(location.hash.slice(1));
+  if(h==="courses")show("courses"); else if(LABS[h])openLab(h); else if(COURSES.some(c=>c.id===h))openCourse(h);})();
+
+/* 웹앱: 오프라인 저장 (https 주소에서만 동작, 로컬 파일 실행 시에는 무시됨) */
+if("serviceWorker" in navigator && location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(()=>{});}
+</script>
+</body>
+</html>
